@@ -24,11 +24,18 @@ function mergeBbox(a, b) {
 export function segment(strokes, canvas) {
   if (!strokes.length) return { clusters: [] };
   const tagged = strokes.map(s => ({ stroke: s, bbox: bbox(s) }));
-  const canvasArea = canvas.width * canvas.height;
 
-  const big   = tagged.filter(t => area(t.bbox) >= 0.04 * canvasArea);
-  const small = tagged.filter(t => area(t.bbox) <  0.04 * canvasArea);
+  // Classify each stroke as letter or diacritic by RELATIVE size.
+  // Diacritics are typically much smaller than letter strokes.
+  const sortedAreas = tagged.map(t => area(t.bbox)).sort((a, b) => a - b);
+  const median = sortedAreas[Math.floor(sortedAreas.length / 2)];
+  const DIACRITIC_RATIO = 0.35; // strokes < 35% of median area are diacritic candidates
 
+  const big   = tagged.filter(t => area(t.bbox) >= DIACRITIC_RATIO * median);
+  const small = tagged.filter(t => area(t.bbox) <  DIACRITIC_RATIO * median);
+
+  // If every stroke is "big" (no diacritics detected), proceed normally.
+  // If every stroke is "small", treat all as letters (no median split possible).
   const letterTagged = big.length ? big : tagged;
   const diacriticTagged = big.length ? small : [];
 

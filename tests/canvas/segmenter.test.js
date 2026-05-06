@@ -34,3 +34,15 @@ test('segmenter: empty input returns empty clusters array', () => {
   const out = segment([], CANVAS);
   assert.deepEqual(out.clusters, []);
 });
+
+test('segmenter: a small stroke much smaller than the median is a diacritic', () => {
+  // Two large letter strokes + one tiny mark
+  const lA = makeStroke([[10, 100], [40, 110], [70, 100], [100, 110]]); // ~90×10 = 900
+  const lB = makeStroke([[150, 100], [180, 110], [210, 100], [240, 110]]); // ~90×10 = 900
+  const dot = makeStroke([[180, 50], [185, 52]]); // ~5×2 = 10
+  const out = segment([lA, lB, dot], CANVAS);
+  assert.equal(out.clusters.length, 2);
+  // dot attaches to one cluster (whichever is closer in x)
+  const total = out.clusters.reduce((s, c) => s + c.diacritics.length, 0);
+  assert.equal(total, 1);
+});
