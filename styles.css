@@ -1,0 +1,6 @@
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; height: 100%; background: #0f172a; color: #e2e8f0; font-family: system-ui, sans-serif; }
+#app { display: flex; flex-direction: column; height: 100dvh; }
+#header { flex: 0 0 auto; padding: 8px 12px; }
+#verse-display { flex: 1 1 auto; padding: 12px; overflow-y: auto; }
+#canvas-view { flex: 0 0 45dvh; border-top: 1px solid #1e293b; position: relative; }
