@@ -14,6 +14,10 @@ export function openDb() {
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
+    req.onblocked = () => reject(new Error('IndexedDB upgrade blocked by another tab'));
+  }).catch((err) => {
+    dbPromise = null; // allow retry
+    throw err;
   });
   return dbPromise;
 }

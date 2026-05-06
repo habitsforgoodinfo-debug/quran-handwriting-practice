@@ -43,3 +43,11 @@ test('stats: reset clears everything', async () => {
   const s = await getStats(db);
   assert.deepEqual(s.letterErrors, {});
 });
+
+test('stats: recordError throws on unknown kind', async () => {
+  const db = makeMockDb();
+  await assert.rejects(
+    () => recordError({ kind: 'letters', value: 'ع' }, db),
+    /unknown kind/
+  );
+});

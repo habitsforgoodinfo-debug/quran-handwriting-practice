@@ -1,7 +1,10 @@
 import { counterIncrement, counterAll, counterClear } from './db.js';
 
 export async function recordError({ kind, value }, deps = { counterIncrement, counterAll, counterClear }) {
-  const store = kind === 'letter' ? 'letterErrors' : 'diacriticErrors';
+  let store;
+  if (kind === 'letter') store = 'letterErrors';
+  else if (kind === 'diacritic') store = 'diacriticErrors';
+  else throw new Error(`recordError: unknown kind "${kind}"`);
   await deps.counterIncrement(store, value);
 }
 
