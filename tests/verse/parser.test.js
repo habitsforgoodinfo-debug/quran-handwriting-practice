@@ -106,3 +106,46 @@ test('parseWord: قُلْ → qaf+damma, lam+sukun, both non-silent', () => {
   assert.deepEqual(w[1].diacritics, ['sukun']);
   assert.equal(w[1].isSilent, false);
 });
+
+test("parseWord: alif-with-madda 'آ' is a single base letter, silent when bare", () => {
+  const w = parseWord('آ');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].letter, 'آ');
+  assert.equal(w[0].isSilent, true);
+  assert.equal(w[0].isMaddAlif, false);
+});
+
+test("parseWord: alif wasla 'ٱ' is a single base letter, silent when bare", () => {
+  const w = parseWord('ٱ');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].letter, 'ٱ');
+  assert.equal(w[0].isSilent, true);
+});
+
+test('parseWord: letter with only dagger_alif is non-silent (mark carries elongation sound)', () => {
+  // ل + dagger_alif → user must write the lam (mark gives it audible elongation)
+  const w = parseWord('لٰ');
+  assert.equal(w.length, 1);
+  assert.equal(w[0].letter, 'ل');
+  assert.deepEqual(w[0].diacritics, ['dagger_alif']);
+  assert.equal(w[0].isSilent, false);
+});
+
+test('parseWord: consecutive bare alifs each get their own glyph, all silent', () => {
+  const w = parseWord('ااا');
+  assert.equal(w.length, 3);
+  for (const g of w) {
+    assert.equal(g.letter, 'ا');
+    assert.equal(g.isSilent, true);
+    assert.equal(g.isMaddAlif, false);
+  }
+});
+
+test('parseWord: hamza variants are passthrough base letters', () => {
+  for (const ch of ['ء','أ','إ','ؤ','ئ']) {
+    const w = parseWord(ch);
+    assert.equal(w.length, 1);
+    assert.equal(w[0].letter, ch);
+    assert.equal(w[0].isSilent, true);
+  }
+});

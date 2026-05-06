@@ -12,25 +12,32 @@ const DIACRITIC_MAP = {
 };
 
 const ALIF = 'ا';      // ا
-const FATHA = 'َ';     // َ
 
-// A character is a combining mark in Arabic if its codepoint is in
-// U+064B..U+065F or U+0670..U+06ED. (These are the harakat + Quranic marks.)
+// A character is a combining mark in Arabic if its codepoint is in:
+//   U+064B..U+065F (tanween/harakat block),
+//   U+0670        (dagger alif), or
+//   U+06D6..U+06ED (Quranic small annotations).
+// Note: U+0671..U+06D5 contains base letters (e.g. ٱ alif-wasla, gc=Lo)
+// and punctuation, NOT combining marks.
 function isCombiningMark(ch) {
   const c = ch.codePointAt(0);
-  return (c >= 0x064B && c <= 0x065F) || (c >= 0x0670 && c <= 0x06ED);
+  if (c >= 0x064B && c <= 0x065F) return true;
+  if (c === 0x0670) return true;
+  if (c >= 0x06D6 && c <= 0x06ED) return true;
+  return false;
 }
 
 export function parseWord(word) {
   const glyphs = [];
+  const codepoints = Array.from(word);
   let i = 0;
-  while (i < word.length) {
-    const ch = word[i];
+  while (i < codepoints.length) {
+    const ch = codepoints[i];
     if (isCombiningMark(ch)) { i++; continue; } // stray mark with no base — skip
     const glyph = { letter: ch, diacritics: [], isSilent: true, isMaddAlif: false };
     i++;
-    while (i < word.length && isCombiningMark(word[i])) {
-      const name = DIACRITIC_MAP[word[i]];
+    while (i < codepoints.length && isCombiningMark(codepoints[i])) {
+      const name = DIACRITIC_MAP[codepoints[i]];
       if (name) glyph.diacritics.push(name);
       i++;
     }
