@@ -9,7 +9,7 @@ export async function loadQuran() {
     if (!res.ok) throw new Error(`Failed to load Quran data: ${res.status}`);
     cache = await res.json();
     return cache;
-  })();
+  })().finally(() => { inflight = null; });
   return inflight;
 }
 
