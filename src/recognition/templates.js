@@ -56,4 +56,3 @@ export function buildAllTemplates(fontSpec) {
   return cache;
 }
 
-export function _resetTemplatesForTests() { cache = null; }

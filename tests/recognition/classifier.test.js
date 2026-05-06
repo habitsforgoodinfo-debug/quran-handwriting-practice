@@ -1,6 +1,9 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { classifyClusters } from '../../src/recognition/classifier.js';
+import { resample, normalize } from '../../src/recognition/dtw.js';
+
+const norm = (pts) => ({ points: normalize(resample(pts, 64)) });
 
 // Build a tiny mock template map: each "letter" is a 2-point segment with distinct shape.
 function mockTemplate(points) {
@@ -35,11 +38,37 @@ test('classifyClusters: confidence field exists', () => {
   assert.ok('confidence' in out[0]);
 });
 
-test('classifyClusters: prefers positionally-expected letter when distance is close', () => {
-  // Cluster shape matches 'ك' best, but expected[0] is 'ت' — within 1.3x ratio?
-  // The horizontal cluster shape is much closer to ك (horizontal) than ت (vertical),
-  // so distance to ت should be > 1.3x distance to ك, and 'ك' wins.
-  const out = classifyClusters([cluster([[0, 0], [1, 0], [2, 0]])], ['ت'], { templates: mockTemplates });
-  // Don't assert which letter wins — assert that the function runs and returns a string letter.
-  assert.equal(typeof out[0].matchedLetter, 'string');
+test('classifyClusters: positional letter wins when both candidates are close', () => {
+  // Two templates with very similar shapes — both close to the cluster.
+  // Templates are pre-normalized to match the classifier's internal cluster shape.
+  // Both templates slightly off the cluster, with B only ~1.2× farther than A — within the 1.3× window.
+  const tplA = norm([{ x: 0, y: 0.01 }, { x: 1, y: 0 }, { x: 2, y: 0.01 }]);
+  const tplB = norm([{ x: 0, y: 0.012 }, { x: 1, y: 0 }, { x: 2, y: 0.012 }]);
+  const tplsClose = { 'A': tplA, 'B': tplB };
+  // Cluster is straight horizontal → matches both very closely. Best by distance is A,
+  // but positional[0] is 'B' and dPos within 1.3× of bestDist, so positional should win.
+  const cluster = { strokes: [{ points: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }] }], diacritics: [] };
+  const out = classifyClusters([cluster], ['B', 'A'], { templates: tplsClose });
+  assert.equal(out[0].matchedLetter, 'B');
+});
+
+test('classifyClusters: when positional is far from cluster, best-by-distance wins', () => {
+  // A close horizontal template + a very different template.
+  const tplA = norm([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]); // horizontal
+  const tplB = norm([{ x: 0, y: 0 }, { x: 0, y: 5 }, { x: 0, y: 10 }]); // vertical, far
+  const tpls = { 'A': tplA, 'B': tplB };
+  const cluster = { strokes: [{ points: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }] }], diacritics: [] };
+  const out = classifyClusters([cluster], ['B', 'A'], { templates: tpls });
+  // Positional says B but B's distance >> A's, ratio > 1.3 — best-by-distance (A) wins.
+  assert.equal(out[0].matchedLetter, 'A');
+});
+
+test('classifyClusters: a near-perfect match is never flagged unclear', () => {
+  const tplA = norm([{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }]);
+  const tplB = norm([{ x: 0, y: 0 }, { x: 1, y: 0.005 }, { x: 2, y: 0 }]);
+  // With two near-identical templates, the confidence gap is tiny
+  // — but bestDist is also tiny (below ABSOLUTE_GOOD), so unclear should be false.
+  const cluster = { strokes: [{ points: [{ x: 0, y: 0 }, { x: 1, y: 0 }, { x: 2, y: 0 }] }], diacritics: [] };
+  const out = classifyClusters([cluster], [], { templates: { 'A': tplA, 'B': tplB } });
+  assert.equal(out[0].unclear, false);
 });

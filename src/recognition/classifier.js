@@ -32,6 +32,7 @@ export function classifyClusters(clusters, expectedLetters, opts = {}) {
       else if (d < second) { second = d; }
     }
 
+    const ABSOLUTE_GOOD = 0.05; // distance below this is a clearly good match regardless of confidence gap
     const confidence = second === Infinity ? 0 : Math.max(0, (second - bestDist) / Math.max(second, 1e-6));
     const positional = expectedLetters[i] ?? best;
     let matchedLetter = best;
@@ -42,7 +43,8 @@ export function classifyClusters(clusters, expectedLetters, opts = {}) {
         if (dPos <= bestDist * 1.3) matchedLetter = positional;
       }
     }
-    out.push({ matchedLetter, confidence, distance: bestDist, unclear: confidence < unclearThreshold });
+    const unclear = bestDist > ABSOLUTE_GOOD && confidence < unclearThreshold;
+    out.push({ matchedLetter, confidence, distance: bestDist, unclear });
   }
   return out;
 }
