@@ -32,3 +32,11 @@ html, body { margin: 0; padding: 0; height: 100%; background: #0f172a; color: #e
 .verse-line { margin-bottom: 16px; }
 .verse-controls { margin-top: 12px; }
 .verse-controls button { background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
+
+.toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ef4444; color: white; padding: 10px 16px; border-radius: 8px; z-index: 200; }
+
+/* Header layout */
+#header { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+#header select.surah { flex: 1 1 200px; min-width: 0; padding: 6px; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; }
+#header input.from, #header input.to { width: 60px; padding: 6px; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; }
+#header button.settings { background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 6px 10px; font-size: 16px; }
