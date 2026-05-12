@@ -65,12 +65,12 @@ test('parseWord: sukun', () => {
   assert.equal(w[0].isSilent, false);
 });
 
-test('parseWord: unknown ornamental marks (small high seen U+06D6) ignored', () => {
+test('parseWord: Quranic pause mark U+06D6 is recognized as a diacritic on its base', () => {
   const w = parseWord('بۖ');
   assert.equal(w.length, 1);
   assert.equal(w[0].letter, 'ب');
-  assert.deepEqual(w[0].diacritics, []);
-  assert.equal(w[0].isSilent, true);
+  assert.deepEqual(w[0].diacritics, ['high_ligature_sad_lam']);
+  assert.equal(w[0].isSilent, false);
 });
 
 test('parseVerse: bismillah short form → 2 words', () => {

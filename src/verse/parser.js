@@ -1,15 +1,50 @@
-// Diacritic codepoint → semantic name
+// Diacritic codepoint → semantic name. Covers every combining mark actually
+// present in the bundled Indo-Pak and Uthmani data (see scripts/scan-marks.js).
 const DIACRITIC_MAP = {
-  'ً': 'tanween_fath',  // ً
-  'ٌ': 'tanween_damm',  // ٌ
-  'ٍ': 'tanween_kasr',  // ٍ
-  'َ': 'fatha',         // َ
-  'ُ': 'damma',         // ُ
-  'ِ': 'kasra',         // ِ
-  'ّ': 'shadda',        // ّ
-  'ْ': 'sukun',         // ْ
-  'ٰ': 'dagger_alif'    // ٰ
+  // standard harakat / tanween (U+064B..U+0652)
+  'ً': 'tanween_fath',
+  'ٌ': 'tanween_damm',
+  'ٍ': 'tanween_kasr',
+  'َ': 'fatha',
+  'ُ': 'damma',
+  'ِ': 'kasra',
+  'ّ': 'shadda',
+  'ْ': 'sukun',
+  // additional letter marks
+  'ٓ': 'maddah_above',      // U+0653
+  'ٔ': 'hamza_above',       // U+0654
+  'ٕ': 'hamza_below',       // U+0655
+  'ٖ': 'mark_0656',         // U+0656 (Indo-Pak small low kasra-like)
+  'ٗ': 'mark_0657',         // U+0657 (Indo-Pak inverted damma)
+  '٘': 'mark_0658',         // U+0658 (Indo-Pak mark noon ghunna)
+  'ٜ': 'mark_065C',         // U+065C
+  'ٰ': 'dagger_alif',       // U+0670
+  // small high Quranic annotations (U+06D6..U+06ED)
+  'ۖ': 'high_ligature_sad_lam',                 // U+06D6
+  'ۗ': 'high_qaf_lam',                          // U+06D7
+  'ۘ': 'high_meem_initial',                     // U+06D8
+  'ۙ': 'high_lam',                              // U+06D9
+  'ۚ': 'high_jeem',                             // U+06DA
+  'ۛ': 'high_three_dots',                       // U+06DB
+  'ۜ': 'high_seen',                             // U+06DC
+  '۞': 'rub_el_hizb',                           // U+06DE (not strictly combining but encountered)
+  '۠': 'high_upright_rectangular_zero',         // U+06E0
+  'ۡ': 'high_dotless_head_of_khah',             // U+06E1 (Indo-Pak sukun substitute)
+  'ۢ': 'high_meem_isolated',                    // U+06E2
+  'ۤ': 'high_madda',                            // U+06E4
+  'ۥ': 'small_waw',                             // U+06E5
+  'ۦ': 'small_yeh',                             // U+06E6
+  'ۧ': 'small_high_yeh',                        // U+06E7
+  'ۨ': 'small_high_noon',                       // U+06E8
+  '۩': 'place_of_sajdah',                       // U+06E9
+  '۬': 'rounded_high_stop_with_filled_centre',  // U+06EC
+  'ۭ': 'small_low_meem'                         // U+06ED
 };
+
+// Reverse map: name → char. Used by renderer and user-stream modules.
+const DIACRITIC_CHAR = Object.fromEntries(
+  Object.entries(DIACRITIC_MAP).map(([ch, name]) => [name, ch])
+);
 
 const ALIF = 'ا';      // ا
 
@@ -65,3 +100,8 @@ export function parseVerse(verseText) {
     .filter(Boolean)
     .map(parseWord);
 }
+
+// Exported for use by user-stream and renderer modules.
+export { isCombiningMark };
+export const _diacriticMapForUserStream = DIACRITIC_MAP;
+export const _diacriticCharByName = DIACRITIC_CHAR;

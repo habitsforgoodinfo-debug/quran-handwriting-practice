@@ -8,9 +8,32 @@ const HARAKAT_EXTRA = [
   { name: 'shadda',       char: 'ّ' },
   { name: 'tanween_fath', char: 'ً' },
   { name: 'tanween_kasr', char: 'ٍ' },
-  { name: 'tanween_damm', char: 'ٌ' }
+  { name: 'tanween_damm', char: 'ٌ' },
+  { name: 'dagger_alif',  char: 'ٰ' }
 ];
 const MADD_KEY = { char: 'ٓ', longChar: 'ٓۤ' };
+
+// Additional combining marks that appear in the bundled data. Surfaced in a
+// secondary "extras" row above the letter grid. Each tap appends the mark
+// verbatim — no long-press behaviour.
+const EXTRAS = [
+  { name: 'hamza_above',     char: 'ٔ' },  // U+0654
+  { name: 'hamza_below',     char: 'ٕ' },  // U+0655
+  { name: 'high_sukun',      char: 'ۡ' },  // U+06E1 (Indo-Pak sukun substitute)
+  { name: 'small_waw',       char: 'ۥ' },  // U+06E5
+  { name: 'small_yeh',       char: 'ۦ' },  // U+06E6
+  { name: 'small_high_noon', char: 'ۨ' },  // U+06E8
+  { name: 'high_madda',      char: 'ۤ' },  // U+06E4
+  { name: 'small_low_meem',  char: 'ۭ' },  // U+06ED
+  { name: 'high_meem_iso',   char: 'ۢ' },  // U+06E2
+  { name: 'high_sad_lam',    char: 'ۖ' },  // U+06D6 (pause: sili)
+  { name: 'high_qaf_lam',    char: 'ۗ' },  // U+06D7 (pause: qif)
+  { name: 'high_meem_init',  char: 'ۘ' },  // U+06D8 (pause: mim)
+  { name: 'high_lam',        char: 'ۙ' },  // U+06D9 (pause: la)
+  { name: 'high_jeem',       char: 'ۚ' },  // U+06DA (pause: jim)
+  { name: 'high_three_dots', char: 'ۛ' },  // U+06DB
+  { name: 'end_of_ayah',     char: '۝' }   // U+06DD
+];
 
 const LAYOUT = [
   ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د'],
@@ -30,13 +53,16 @@ export function mountKeypad(root, { onSubmit }) {
   const harakatRow = document.createElement('div');
   harakatRow.className = 'keypad-harakat';
 
+  const extrasRow = document.createElement('div');
+  extrasRow.className = 'keypad-extras';
+
   const lettersWrap = document.createElement('div');
   lettersWrap.className = 'keypad-letters';
 
   const actionRow = document.createElement('div');
   actionRow.className = 'keypad-actions';
 
-  root.append(inputEl, harakatRow, lettersWrap, actionRow);
+  root.append(inputEl, harakatRow, extrasRow, lettersWrap, actionRow);
 
   function render() { inputEl.textContent = input || ' '; }
   function append(s) { input += s; render(); }
@@ -90,6 +116,15 @@ export function mountKeypad(root, { onSubmit }) {
     harakatRow.appendChild(b);
   }
   harakatRow.appendChild(makeLongPressKey('ـ' + MADD_KEY.char, MADD_KEY.char, MADD_KEY.longChar, 'key key--harakah key--madd'));
+
+  // Extras row — additional combining marks present in the bundled data.
+  for (const m of EXTRAS) {
+    const b = document.createElement('button');
+    b.className = 'key key--extra';
+    b.textContent = 'ـ' + m.char;
+    b.addEventListener('click', () => append(m.char));
+    extrasRow.appendChild(b);
+  }
 
   for (const row of LAYOUT) {
     const rowEl = document.createElement('div');

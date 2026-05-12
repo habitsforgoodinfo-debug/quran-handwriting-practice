@@ -1,4 +1,4 @@
-import { renderUserWord, renderCorrectVerse, clearVerseDisplay } from '../verse/renderer.js';
+import { renderUserStream, renderCorrectVerse, clearVerseDisplay } from '../verse/renderer.js';
 
 export function mountVerseDisplay(root, { onPlayVerse }) {
   root.innerHTML = '';
@@ -39,8 +39,9 @@ export function mountVerseDisplay(root, { onPlayVerse }) {
       v.className = 'verse-line user-line';
       userContainer.appendChild(v);
       return {
-        appendWord: (alignment) => renderUserWord(v, alignment),
-        appendCorrectVerse: (expectedWords, wordAlignments) => renderCorrectVerse(userContainer, expectedWords, wordAlignments)
+        appendUserStream: (annotations) => renderUserStream(v, annotations),
+        appendCorrectVerse: (expectedWords, glyphResultsByWord) =>
+          renderCorrectVerse(userContainer, expectedWords, glyphResultsByWord)
       };
     },
     reset: () => {
@@ -48,7 +49,6 @@ export function mountVerseDisplay(root, { onPlayVerse }) {
       clearVerseDisplay(revealContainer);
     },
     // Render the canonical verses (one per verse) into the reveal container.
-    // Called by main.js whenever the selected range changes.
     setRevealVerses: (verses) => {
       clearVerseDisplay(revealContainer);
       for (const verse of verses) {

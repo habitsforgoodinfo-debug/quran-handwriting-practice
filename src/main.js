@@ -1,11 +1,12 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
-import { parseVerse, parseWord } from './verse/parser.js';
+import { parseVerse } from './verse/parser.js';
+import { parseUserStream } from './compare/user-stream.js';
+import { smartMatch } from './compare/smart-match.js';
 import { mountHeader } from './ui/header.js';
 import { mountVerseDisplay } from './ui/verse-display.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
 import { showSummary } from './ui/summary.js';
-import { align } from './compare/aligner.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import { recordError, resetStats } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
@@ -14,10 +15,8 @@ const state = {
   surah: 1, fromAyah: 1, toAyah: 1,
   parsedVerses: [],
   cursor: { verseIdx: 0, wordIdx: 0 },
-  history: [],
   settings: null,
-  session: { wordsWritten: 0, wordsTotal: 0, letterErrors: {}, diacriticErrors: {}, letterErrorsTotal: 0, diacriticErrorsTotal: 0 },
-  verseAlignments: []
+  session: { wordsWritten: 0, wordsTotal: 0, letterErrors: {}, diacriticErrors: {}, letterErrorsTotal: 0, diacriticErrorsTotal: 0 }
 };
 
 const player = new AyahPlayer();
@@ -68,8 +67,6 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
     state.parsedVerses.push(parseVerse(raw));
   }
   state.cursor = { verseIdx: 0, wordIdx: 0 };
-  state.history = [];
-  state.verseAlignments = state.parsedVerses.map(v => v.map(() => null));
   state.session = {
     wordsWritten: 0,
     wordsTotal: state.parsedVerses.reduce((s, v) => s + v.length, 0),
@@ -77,53 +74,67 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
     letterErrorsTotal: 0, diacriticErrorsTotal: 0
   };
   verseDisplayApi.reset();
-  // Feed canonical verses AFTER reset (reset wipes both containers).
   verseDisplayApi.setRevealVerses(rawVerses);
   currentVerseLine = verseDisplayApi.startNewVerse();
   keypadApi.clearInput();
 }
 
-// Convert one user-typed word (string) to the `recognized` shape expected by align().
-function userWordToRecognized(userWordText) {
-  const userGlyphs = parseWord(userWordText);
-  const letters = userGlyphs.map(g => ({ matchedLetter: g.letter, confidence: 1, unclear: false }));
-  const diacritics = [];
-  for (const g of userGlyphs) {
-    if (g.diacritics.length > 0) diacritics.push(g.diacritics[0]);
-    else diacritics.push(null);
-  }
-  return { letters, diacritics };
-}
-
 function handleSubmit(text) {
-  const userWords = text.trim().split(/\s+/).filter(Boolean);
-  if (userWords.length === 0) return;
+  const userItems = parseUserStream(text);
+  if (userItems.filter(i => i.kind === 'letter').length === 0) return;
 
-  for (const userWord of userWords) {
-    const word = currentExpectedWord();
-    if (!word) break;
+  const { annotations, newCursor, completedVerses, verseAlignments } =
+    smartMatch(userItems, state.parsedVerses, state.cursor);
 
-    const recognized = userWordToRecognized(userWord);
-    const alignment = align(word, recognized);
+  // Append annotated user text to the current verse's user line. Crossing
+  // verse boundaries within a single submit puts everything on the current
+  // line; correction lines below still print per verse correctly.
+  if (currentVerseLine) {
+    currentVerseLine.appendUserStream(annotations);
+  }
 
-    state.verseAlignments[state.cursor.verseIdx][state.cursor.wordIdx] = alignment;
-
-    currentVerseLine.appendWord(alignment);
-
-    for (const r of alignment.result) {
-      if (r.letterMatch === 'wrong' || r.letterMatch === 'missing') {
-        recordError({ kind: 'letter', value: r.expected.letter });
-        bumpSession('letter', r.expected.letter);
-      }
-      if (r.diacriticMatch === 'wrong' || r.diacriticMatch === 'missing') {
-        const d = r.expected.diacritics[0];
-        if (d) { recordError({ kind: 'diacritic', value: d }); bumpSession('diacritic', d); }
+  // Record per-letter / per-diacritic errors.
+  for (const [, verseMap] of verseAlignments.entries()) {
+    for (const [, results] of verseMap.entries()) {
+      for (const r of results) {
+        if (r.letterMatch === 'wrong') {
+          recordError({ kind: 'letter', value: r.expected.letter });
+          bumpSession('letter', r.expected.letter);
+        }
+        if (r.diacriticMatch === 'wrong' || r.diacriticMatch === 'missing') {
+          const d = r.expected.diacritics[0];
+          if (d) { recordError({ kind: 'diacritic', value: d }); bumpSession('diacritic', d); }
+        }
       }
     }
+  }
 
-    state.session.wordsWritten++;
-    state.history.push({ verseIdx: state.cursor.verseIdx, wordIdx: state.cursor.wordIdx });
-    advanceCursor();
+  // Emit correction line for each completed verse, then start fresh user line.
+  for (const vi of completedVerses) {
+    const expectedVerse = state.parsedVerses[vi];
+    const verseResults = verseAlignments.get(vi) || new Map();
+    const byWord = new Map();
+    for (let wi = 0; wi < expectedVerse.length; wi++) {
+      byWord.set(wi, verseResults.get(wi) || []);
+    }
+    currentVerseLine.appendCorrectVerse(expectedVerse, byWord);
+    state.session.wordsWritten += expectedVerse.length;
+    if (vi < state.parsedVerses.length - 1) {
+      currentVerseLine = verseDisplayApi.startNewVerse();
+    }
+  }
+
+  state.cursor = newCursor;
+
+  if (newCursor.verseIdx >= state.parsedVerses.length) {
+    showSummary(document.body, {
+      sessionStats: state.session,
+      onPracticeAgain: () => handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah }),
+      onPickNew: () => {
+        const surahSel = document.querySelector('#header select.surah');
+        if (surahSel) { surahSel.focus(); surahSel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+      }
+    });
   }
 }
 
@@ -132,35 +143,6 @@ function bumpSession(kind, value) {
   map[value] = (map[value] || 0) + 1;
   if (kind === 'letter') state.session.letterErrorsTotal++;
   else state.session.diacriticErrorsTotal++;
-}
-
-function currentExpectedWord() {
-  const verse = state.parsedVerses[state.cursor.verseIdx];
-  if (!verse) return null;
-  return verse[state.cursor.wordIdx];
-}
-
-function advanceCursor() {
-  state.cursor.wordIdx++;
-  const verse = state.parsedVerses[state.cursor.verseIdx];
-  if (state.cursor.wordIdx >= verse.length) {
-    currentVerseLine.appendCorrectVerse(verse, state.verseAlignments[state.cursor.verseIdx]);
-
-    state.cursor.verseIdx++;
-    state.cursor.wordIdx = 0;
-    if (state.cursor.verseIdx >= state.parsedVerses.length) {
-      showSummary(document.body, {
-        sessionStats: state.session,
-        onPracticeAgain: () => handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah }),
-        onPickNew: () => {
-          const surahSel = document.querySelector('#header select.surah');
-          if (surahSel) { surahSel.focus(); surahSel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-        }
-      });
-      return;
-    }
-    currentVerseLine = verseDisplayApi.startNewVerse();
-  }
 }
 
 function openSettings() {

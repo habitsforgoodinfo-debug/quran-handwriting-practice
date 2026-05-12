@@ -20,7 +20,8 @@ html, body { margin: 0; padding: 0; height: 100%; background: #0f172a; color: #e
 /* Keypad — top harakat row, then 3 letter rows, then actions */
 #keypad-view { padding: 8px; display: flex; flex-direction: column; gap: 6px; background: #1e293b; overflow: hidden; }
 .keypad-input { background: #0f172a; color: #e2e8f0; border-radius: 8px; padding: 10px; font-size: 28px; line-height: 1.5; min-height: 50px; direction: rtl; text-align: right; font-family: 'NotoNaskhArabic', 'Amiri', serif; word-wrap: break-word; overflow-wrap: anywhere; }
-.keypad-harakat { display: grid; grid-template-columns: repeat(9, 1fr); gap: 4px; }
+.keypad-harakat { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
+.keypad-extras { display: grid; grid-template-columns: repeat(8, 1fr); gap: 3px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }
 .keypad-row { display: grid; gap: 4px; }
 .keypad-row:nth-child(1) { grid-template-columns: repeat(12, 1fr); }
@@ -29,7 +30,8 @@ html, body { margin: 0; padding: 0; height: 100%; background: #0f172a; color: #e
 .keypad-actions { display: grid; grid-template-columns: 2fr 1fr 1fr 2fr; gap: 4px; }
 .key { min-height: 48px; font-size: 22px; background: #334155; color: #e2e8f0; border: none; border-radius: 8px; cursor: pointer; font-family: 'NotoNaskhArabic', 'Amiri', serif; touch-action: manipulation; padding: 0; user-select: none; -webkit-user-select: none; }
 .key:active, .key.long-pressed { background: #475569; }
-.key--harakah { font-size: 24px; min-height: 44px; }
+.key--harakah { font-size: 22px; min-height: 44px; }
+.key--extra { font-size: 18px; min-height: 40px; background: #2c3a52; }
 .key--madd { background: #3b4d6b; }
 .key--action { font-size: 13px; font-family: system-ui, sans-serif; }
 .key--action.submit { background: #16a34a; color: white; font-weight: bold; }
