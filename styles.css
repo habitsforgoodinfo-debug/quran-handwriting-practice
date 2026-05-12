@@ -4,3 +4,31 @@ html, body { margin: 0; padding: 0; height: 100%; background: #0f172a; color: #e
 #header { flex: 0 0 auto; padding: 8px 12px; }
 #verse-display { flex: 1 1 auto; padding: 12px; overflow-y: auto; }
 #canvas-view { flex: 0 0 45dvh; border-top: 1px solid #1e293b; position: relative; }
+
+#verse-display { font-family: 'NotoNaskhArabic', 'Amiri', serif; font-size: 28px; line-height: 2.2; direction: rtl; text-align: right; }
+.word { display: inline-block; margin-left: 12px; }
+.glyph { display: inline-block; }
+.glyph--ok       .glyph__letter,
+.glyph--ok       .dia { color: #e2e8f0; }
+.glyph--wrong    .glyph__letter { color: #ef4444; }
+.glyph--missing  .glyph__letter { color: #ef4444; opacity: 0.6; text-decoration: underline dashed; }
+.glyph--unclear  .glyph__letter { color: #f59e0b; }
+.glyph--autofill .glyph__letter { color: #64748b; }
+.glyph--autofill.glyph--silent-visible .glyph__letter { color: #475569; }
+.dia--wrong   { color: #ef4444 !important; }
+.dia--missing { color: #ef4444 !important; opacity: 0.6; }
+.extra--letter, .extra--diacritic { color: #ef4444; text-decoration: line-through; margin-right: 4px; }
+
+#canvas-view { position: relative; background: #1e293b; }
+.draw-canvas { position: absolute; inset: 0; width: 100%; height: 100%; touch-action: none; }
+.commit-hint { position: absolute; bottom: 6px; right: 12px; font-size: 12px; color: #94a3b8; pointer-events: none; }
+.undo { position: absolute; top: 6px; right: 6px; background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 4px 8px; }
+
+.modal { position: fixed; inset: 0; background: rgba(0,0,0,0.6); display: grid; place-items: center; z-index: 100; }
+.modal__panel { background: #1e293b; padding: 20px; border-radius: 12px; min-width: 280px; display: flex; flex-direction: column; gap: 12px; }
+.modal label { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
+.modal button { padding: 8px 12px; background: #334155; color: #e2e8f0; border: none; border-radius: 6px; }
+
+.verse-line { margin-bottom: 16px; }
+.verse-controls { margin-top: 12px; }
+.verse-controls button { background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; }
