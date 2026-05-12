@@ -69,6 +69,7 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
     letterErrors: {}, diacriticErrors: {},
     letterErrorsTotal: 0, diacriticErrorsTotal: 0
   };
+  canvasViewApi?.clear();
   verseDisplayApi.reset();
   currentVerseLine = verseDisplayApi.startNewVerse();
 }
@@ -86,8 +87,8 @@ function handleCommit(committedStrokes, canvasMeta) {
 
   const alignment = align(word, { letters, diacritics });
 
-  currentVerseLine.appendWord(alignment, { silentColorOn: state.settings.silentLetterColorOn });
-  state.history.push({ verseIdx: state.cursor.verseIdx, wordIdx: state.cursor.wordIdx });
+  const renderedWord = currentVerseLine.appendWord(alignment, { silentColorOn: state.settings.silentLetterColorOn });
+  state.history.push({ verseIdx: state.cursor.verseIdx, wordIdx: state.cursor.wordIdx, rendered: renderedWord });
 
   for (const r of alignment.result) {
     if (r.letterMatch === 'wrong' || r.letterMatch === 'missing') {
@@ -127,7 +128,10 @@ function advanceCursor() {
       showSummary(document.body, {
         sessionStats: state.session,
         onPracticeAgain: () => handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah }),
-        onPickNew: () => {}
+        onPickNew: () => {
+          const surahSel = document.querySelector('#header select.surah');
+          if (surahSel) { surahSel.focus(); surahSel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
+        }
       });
       return;
     }
@@ -136,10 +140,15 @@ function advanceCursor() {
 }
 
 function handleUndo() {
-  // Simple v1: rewind cursor only. Rendered word stays on the page (known limitation).
   const last = state.history.pop();
   if (!last) return;
+  if (last.rendered && last.rendered.remove) last.rendered.remove();
+  // Decrement session counters for the undone word
+  state.session.wordsWritten = Math.max(0, state.session.wordsWritten - 1);
   state.cursor = { verseIdx: last.verseIdx, wordIdx: last.wordIdx };
+  // Also bring back commit hint visibility — see fix 3
+  const hint = document.querySelector('#canvas-view .commit-hint');
+  if (hint) hint.style.display = '';
 }
 
 function openSettings() {
@@ -154,12 +163,27 @@ function playCurrentVerse() {
   const ayah = state.fromAyah + state.cursor.verseIdx;
   const url = buildAyahUrl(state.settings.reciter, state.surah, ayah);
   player.play(url).catch(() => {
-    const t = document.createElement('div');
-    t.className = 'toast';
-    t.textContent = 'Could not load audio. Check connection.';
-    document.body.appendChild(t);
-    setTimeout(() => t.remove(), 3000);
+    showRetryToast('Could not load audio.', playCurrentVerse);
   });
+}
+
+function showRetryToast(message, onRetry) {
+  // Remove any existing toast first.
+  document.querySelectorAll('.toast').forEach(t => t.remove());
+  const toast = document.createElement('div');
+  toast.className = 'toast';
+  const text = document.createElement('span');
+  text.textContent = message + ' ';
+  const retry = document.createElement('button');
+  retry.textContent = 'Retry';
+  retry.className = 'toast-retry';
+  retry.addEventListener('click', () => { toast.remove(); onRetry(); });
+  const dismiss = document.createElement('button');
+  dismiss.textContent = '×';
+  dismiss.className = 'toast-dismiss';
+  dismiss.addEventListener('click', () => toast.remove());
+  toast.append(text, retry, dismiss);
+  document.body.appendChild(toast);
 }
 
 init().catch((err) => {
