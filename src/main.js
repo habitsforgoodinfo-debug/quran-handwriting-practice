@@ -61,13 +61,12 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
   state.fromAyah = fromAyah;
   state.toAyah = toAyah;
   state.parsedVerses = [];
-  for (let a = fromAyah; a <= toAyah; a++) {
-    state.parsedVerses.push(parseVerse(getVerse(surah, a)));
-  }
-  // Feed raw canonical verses (strings) to the reveal panel.
   const rawVerses = [];
-  for (let a = fromAyah; a <= toAyah; a++) rawVerses.push(getVerse(surah, a));
-  verseDisplayApi.setRevealVerses(rawVerses);
+  for (let a = fromAyah; a <= toAyah; a++) {
+    const raw = getVerse(surah, a);
+    rawVerses.push(raw);
+    state.parsedVerses.push(parseVerse(raw));
+  }
   state.cursor = { verseIdx: 0, wordIdx: 0 };
   state.history = [];
   state.verseAlignments = state.parsedVerses.map(v => v.map(() => null));
@@ -78,6 +77,8 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
     letterErrorsTotal: 0, diacriticErrorsTotal: 0
   };
   verseDisplayApi.reset();
+  // Feed canonical verses AFTER reset (reset wipes both containers).
+  verseDisplayApi.setRevealVerses(rawVerses);
   currentVerseLine = verseDisplayApi.startNewVerse();
   keypadApi.clearInput();
 }
