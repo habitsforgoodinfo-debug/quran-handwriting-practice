@@ -17,21 +17,21 @@ export function renderUserWord(container, alignment) {
   word.className = 'word user-word';
 
   for (const r of alignment.result) {
-    if (r.letterMatch === 'autofill') continue;
+    if (r.letterMatch === 'autofill' || r.letterMatch === 'missing') continue;
+    if (!r.actualLetter) continue;
 
     const g = document.createElement('span');
     g.className = 'glyph';
     const letter = document.createElement('span');
     letter.className = 'glyph__letter';
-
-    letter.textContent = r.expected.letter;
+    letter.textContent = r.actualLetter;
     if (r.letterMatch !== 'ok') letter.classList.add('mistake');
     g.appendChild(letter);
 
-    for (const dn of r.expected.diacritics) {
+    for (const adn of r.actualDiacritics) {
       const dia = document.createElement('span');
       dia.className = 'dia';
-      dia.textContent = DIACRITIC_CHAR[dn] || '';
+      dia.textContent = DIACRITIC_CHAR[adn] || '';
       if (r.diacriticMatch !== 'ok' && r.diacriticMatch !== 'n/a') dia.classList.add('mistake');
       g.appendChild(dia);
     }
