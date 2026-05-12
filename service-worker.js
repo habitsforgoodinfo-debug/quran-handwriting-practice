@@ -1,4 +1,4 @@
-const CACHE = 'qhp-v4';
+const CACHE = 'qhp-v5';
 const ASSETS = [
   './',
   './index.html',

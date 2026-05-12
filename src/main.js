@@ -64,6 +64,10 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
   for (let a = fromAyah; a <= toAyah; a++) {
     state.parsedVerses.push(parseVerse(getVerse(surah, a)));
   }
+  // Feed raw canonical verses (strings) to the reveal panel.
+  const rawVerses = [];
+  for (let a = fromAyah; a <= toAyah; a++) rawVerses.push(getVerse(surah, a));
+  verseDisplayApi.setRevealVerses(rawVerses);
   state.cursor = { verseIdx: 0, wordIdx: 0 };
   state.history = [];
   state.verseAlignments = state.parsedVerses.map(v => v.map(() => null));

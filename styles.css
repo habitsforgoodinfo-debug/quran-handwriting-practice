@@ -55,3 +55,8 @@ html, body { margin: 0; padding: 0; height: 100%; background: #0f172a; color: #e
 #header input.from, #header input.to { width: 60px; padding: 6px; background: #1e293b; color: #e2e8f0; border: 1px solid #334155; border-radius: 6px; }
 #header button.settings { background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 6px 10px; font-size: 16px; }
 #header button.script-toggle { background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 6px 8px; font-size: 12px; font-family: system-ui, sans-serif; }
+.verses--reveal { font-family: 'NotoNaskhArabic','Amiri',serif; font-size: 32px; line-height: 2.4; direction: rtl; text-align: right; color: #e2e8f0; }
+.reveal-line { padding: 4px 0; border-bottom: 1px solid #1e293b; }
+.reveal-line:last-child { border-bottom: none; }
+.reveal-btn { background: #334155; color: #e2e8f0; border: none; border-radius: 6px; padding: 6px 10px; cursor: pointer; margin-left: 8px; }
+.reveal-btn:active { background: #475569; }
