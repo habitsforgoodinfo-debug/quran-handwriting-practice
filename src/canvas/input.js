@@ -1,3 +1,4 @@
+// Not used in the current keypad-based flow; kept for reference.
 export class CanvasInput {
   constructor(canvas, { onStroke, strokeColor = '#e2e8f0', strokeWidth = 4 } = {}) {
     this.canvas = canvas;

@@ -1,4 +1,4 @@
-import { renderWord, clearVerseDisplay } from '../verse/renderer.js';
+import { renderUserWord, renderCorrectVerse, clearVerseDisplay } from '../verse/renderer.js';
 
 export function mountVerseDisplay(root, { onPlayVerse }) {
   root.innerHTML = '';
@@ -15,10 +15,11 @@ export function mountVerseDisplay(root, { onPlayVerse }) {
   return {
     startNewVerse: () => {
       const v = document.createElement('div');
-      v.className = 'verse-line';
+      v.className = 'verse-line user-line';
       versesEl.appendChild(v);
       return {
-        appendWord: (alignment, opts) => renderWord(v, alignment, opts)
+        appendWord: (alignment) => renderUserWord(v, alignment),
+        appendCorrectVerse: (expectedWords, wordAlignments) => renderCorrectVerse(versesEl, expectedWords, wordAlignments)
       };
     },
     reset: () => clearVerseDisplay(versesEl)

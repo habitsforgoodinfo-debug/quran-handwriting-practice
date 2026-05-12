@@ -1,17 +1,15 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
-import { parseVerse } from './verse/parser.js';
+import { parseVerse, parseWord } from './verse/parser.js';
 import { mountHeader } from './ui/header.js';
 import { mountVerseDisplay } from './ui/verse-display.js';
-import { mountCanvasView } from './ui/canvas-view.js';
+import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
 import { showSummary } from './ui/summary.js';
-import { segment } from './canvas/segmenter.js';
-import { classifyClusters } from './recognition/classifier.js';
-import { classifyDiacritic } from './recognition/diacritic-detector.js';
 import { align } from './compare/aligner.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import { recordError, resetStats } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
+import { computeKeypadLetters } from './keypad/keypad-letters.js';
 
 const state = {
   surah: 1, fromAyah: 1, toAyah: 1,
@@ -19,12 +17,13 @@ const state = {
   cursor: { verseIdx: 0, wordIdx: 0 },
   history: [],
   settings: null,
-  session: { wordsWritten: 0, wordsTotal: 0, letterErrors: {}, diacriticErrors: {}, letterErrorsTotal: 0, diacriticErrorsTotal: 0 }
+  session: { wordsWritten: 0, wordsTotal: 0, letterErrors: {}, diacriticErrors: {}, letterErrorsTotal: 0, diacriticErrorsTotal: 0 },
+  verseAlignments: []
 };
 
 const player = new AyahPlayer();
 let verseDisplayApi = null;
-let canvasViewApi = null;
+let keypadApi = null;
 let currentVerseLine = null;
 
 async function init() {
@@ -36,15 +35,14 @@ async function init() {
 
   const headerEl = document.getElementById('header');
   const verseEl  = document.getElementById('verse-display');
-  const canvasEl = document.getElementById('canvas-view');
+  const keypadEl = document.getElementById('keypad-view');
 
   verseDisplayApi = mountVerseDisplay(verseEl, { onPlayVerse: playCurrentVerse });
-  canvasViewApi = mountCanvasView(canvasEl, {
-    onCommit: handleCommit,
-    strokeColor: state.settings.strokeColor,
-    strokeWidth: state.settings.strokeWidth
+  keypadApi = mountKeypad(keypadEl, {
+    onSubmit: handleSubmit,
+    letters: [],
+    settings: state.settings
   });
-  canvasViewApi.onUndoClick(handleUndo);
 
   mountHeader(headerEl, {
     initial: { surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah },
@@ -63,46 +61,61 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
   }
   state.cursor = { verseIdx: 0, wordIdx: 0 };
   state.history = [];
+  state.verseAlignments = state.parsedVerses.map(v => v.map(() => null));
   state.session = {
     wordsWritten: 0,
     wordsTotal: state.parsedVerses.reduce((s, v) => s + v.length, 0),
     letterErrors: {}, diacriticErrors: {},
     letterErrorsTotal: 0, diacriticErrorsTotal: 0
   };
-  canvasViewApi?.clear();
   verseDisplayApi.reset();
   currentVerseLine = verseDisplayApi.startNewVerse();
+  keypadApi.setLetters(computeKeypadLetters(state.parsedVerses));
+  keypadApi.clearInput();
 }
 
-function handleCommit(committedStrokes, canvasMeta) {
-  const word = currentExpectedWord();
-  if (!word) return;
-  const userExpected = word.filter(g => !g.isSilent);
-  const expectedLetters = userExpected.map(g => g.letter);
-
-  const seg = segment(committedStrokes, canvasMeta);
-  const letters = classifyClusters(seg.clusters, expectedLetters);
-  const allDiacritics = seg.clusters.flatMap(c => c.diacritics);
-  const diacritics = classifyDiacritic(allDiacritics);
-
-  const alignment = align(word, { letters, diacritics });
-
-  const renderedWord = currentVerseLine.appendWord(alignment, { silentColorOn: state.settings.silentLetterColorOn });
-  state.history.push({ verseIdx: state.cursor.verseIdx, wordIdx: state.cursor.wordIdx, rendered: renderedWord });
-
-  for (const r of alignment.result) {
-    if (r.letterMatch === 'wrong' || r.letterMatch === 'missing') {
-      recordError({ kind: 'letter', value: r.expected.letter });
-      bumpSession('letter', r.expected.letter);
-    }
-    if (r.diacriticMatch === 'wrong' || r.diacriticMatch === 'missing') {
-      const d = r.expected.diacritics[0];
-      if (d) { recordError({ kind: 'diacritic', value: d }); bumpSession('diacritic', d); }
-    }
+// Convert one user-typed word (string) to the `recognized` shape expected by align().
+function userWordToRecognized(userWordText) {
+  const userGlyphs = parseWord(userWordText);
+  const letters = userGlyphs.map(g => ({ matchedLetter: g.letter, confidence: 1, unclear: false }));
+  const diacritics = [];
+  for (const g of userGlyphs) {
+    if (g.diacritics.length > 0) diacritics.push(g.diacritics[0]);
+    else diacritics.push(null);
   }
-  state.session.wordsWritten++;
+  return { letters, diacritics };
+}
 
-  advanceCursor();
+function handleSubmit(text) {
+  const userWords = text.trim().split(/\s+/).filter(Boolean);
+  if (userWords.length === 0) return;
+
+  for (const userWord of userWords) {
+    const word = currentExpectedWord();
+    if (!word) break;
+
+    const recognized = userWordToRecognized(userWord);
+    const alignment = align(word, recognized);
+
+    state.verseAlignments[state.cursor.verseIdx][state.cursor.wordIdx] = alignment;
+
+    currentVerseLine.appendWord(alignment);
+
+    for (const r of alignment.result) {
+      if (r.letterMatch === 'wrong' || r.letterMatch === 'missing') {
+        recordError({ kind: 'letter', value: r.expected.letter });
+        bumpSession('letter', r.expected.letter);
+      }
+      if (r.diacriticMatch === 'wrong' || r.diacriticMatch === 'missing') {
+        const d = r.expected.diacritics[0];
+        if (d) { recordError({ kind: 'diacritic', value: d }); bumpSession('diacritic', d); }
+      }
+    }
+
+    state.session.wordsWritten++;
+    state.history.push({ verseIdx: state.cursor.verseIdx, wordIdx: state.cursor.wordIdx });
+    advanceCursor();
+  }
 }
 
 function bumpSession(kind, value) {
@@ -122,6 +135,8 @@ function advanceCursor() {
   state.cursor.wordIdx++;
   const verse = state.parsedVerses[state.cursor.verseIdx];
   if (state.cursor.wordIdx >= verse.length) {
+    currentVerseLine.appendCorrectVerse(verse, state.verseAlignments[state.cursor.verseIdx]);
+
     state.cursor.verseIdx++;
     state.cursor.wordIdx = 0;
     if (state.cursor.verseIdx >= state.parsedVerses.length) {
@@ -139,18 +154,6 @@ function advanceCursor() {
   }
 }
 
-function handleUndo() {
-  const last = state.history.pop();
-  if (!last) return;
-  if (last.rendered && last.rendered.remove) last.rendered.remove();
-  // Decrement session counters for the undone word
-  state.session.wordsWritten = Math.max(0, state.session.wordsWritten - 1);
-  state.cursor = { verseIdx: last.verseIdx, wordIdx: last.wordIdx };
-  // Also bring back commit hint visibility — see fix 3
-  const hint = document.querySelector('#canvas-view .commit-hint');
-  if (hint) hint.style.display = '';
-}
-
 function openSettings() {
   mountSettingsModal(document.body, {
     settings: state.settings,
@@ -162,13 +165,10 @@ function openSettings() {
 function playCurrentVerse() {
   const ayah = state.fromAyah + state.cursor.verseIdx;
   const url = buildAyahUrl(state.settings.reciter, state.surah, ayah);
-  player.play(url).catch(() => {
-    showRetryToast('Could not load audio.', playCurrentVerse);
-  });
+  player.play(url).catch(() => showRetryToast('Could not load audio.', playCurrentVerse));
 }
 
 function showRetryToast(message, onRetry) {
-  // Remove any existing toast first.
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const toast = document.createElement('div');
   toast.className = 'toast';
@@ -188,8 +188,5 @@ function showRetryToast(message, onRetry) {
 
 init().catch((err) => {
   console.error('Init failed:', err);
-  const t = document.createElement('div');
-  t.className = 'toast';
-  t.textContent = 'Failed to load app. Reload to retry.';
-  document.body.appendChild(t);
+  showRetryToast('Failed to load app.', () => location.reload());
 });

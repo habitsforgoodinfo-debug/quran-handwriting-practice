@@ -27,9 +27,8 @@ Only pure-logic modules are covered by automated tests. UI / DOM / canvas module
 
 ## v1 Known Limitations
 
-- Undo removes the rendered word and decrements session counters, but does NOT roll back persisted error stats (those are recorded immediately on commit). If you want a clean slate, use Settings → Reset stats.
-- Diacritic detection only distinguishes 6 of 9 harakat (fatha, kasra, damma, sukun, tanween_fath, tanween_kasr). Shadda, tanween_damm, and dagger_alif are not yet recognized from handwriting.
-- Letter templates use isolated forms only — initial/medial/final positional forms are not yet templated. Recognition accuracy may suffer for connected letters.
+- Undo is not available in keypad mode — use Clear before submitting if you want to redo input.
+- Persisted error stats are recorded immediately on submit; there is no rollback. Use Settings → Reset stats for a clean slate.
 - Settings has reciter / silent-letter / stroke-width / reset-stats. Font selector and stroke-color picker are deferred.
 - Mid-session reload does not restore the last session.
 - Landscape orientation uses the same stacked layout as portrait (no side-by-side variant yet).
