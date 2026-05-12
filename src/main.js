@@ -28,6 +28,9 @@ let canvasViewApi = null;
 let currentVerseLine = null;
 
 async function init() {
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./service-worker.js').catch(() => {});
+  }
   await loadQuran();
   state.settings = await getSettings();
 
