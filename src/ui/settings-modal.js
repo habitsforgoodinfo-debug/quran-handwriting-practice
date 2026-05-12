@@ -3,35 +3,62 @@ import { RECITERS } from '../audio/player.js';
 export function mountSettingsModal(root, { settings, onChange, onResetStats, onClose }) {
   const modal = document.createElement('div');
   modal.className = 'modal';
-  modal.innerHTML = `
-    <div class="modal__panel">
-      <h3>Settings</h3>
-      <label>Reciter
-        <select class="reciter">
-          ${RECITERS.map(r => `<option value="${r.id}">${r.name}</option>`).join('')}
-        </select>
-      </label>
-      <label>Show silent letters in distinct color
-        <input type="checkbox" class="silent-toggle" />
-      </label>
-      <label>Stroke width <input type="number" min="1" max="20" class="stroke-width" /></label>
-      <button class="reset-stats">Reset stats</button>
-      <button class="close">Close</button>
-    </div>`;
-  root.appendChild(modal);
 
-  const reciter = modal.querySelector('.reciter');
-  const silent = modal.querySelector('.silent-toggle');
-  const sw = modal.querySelector('.stroke-width');
+  const panel = document.createElement('div');
+  panel.className = 'modal__panel';
+
+  const h = document.createElement('h3');
+  h.textContent = 'Settings';
+
+  const labReciter = document.createElement('label');
+  labReciter.append('Reciter ');
+  const reciter = document.createElement('select');
+  reciter.className = 'reciter';
+  for (const r of RECITERS) {
+    const opt = document.createElement('option');
+    opt.value = r.id;
+    opt.textContent = r.name;
+    reciter.appendChild(opt);
+  }
   reciter.value = settings.reciter;
+  labReciter.appendChild(reciter);
+
+  const labSilent = document.createElement('label');
+  labSilent.append('Show silent letters in distinct color ');
+  const silent = document.createElement('input');
+  silent.type = 'checkbox';
+  silent.className = 'silent-toggle';
   silent.checked = settings.silentLetterColorOn;
+  labSilent.appendChild(silent);
+
+  const labWidth = document.createElement('label');
+  labWidth.append('Stroke width ');
+  const sw = document.createElement('input');
+  sw.type = 'number'; sw.min = '1'; sw.max = '20';
+  sw.className = 'stroke-width';
   sw.value = String(settings.strokeWidth);
+  labWidth.appendChild(sw);
+
+  const resetBtn = document.createElement('button');
+  resetBtn.className = 'reset-stats';
+  resetBtn.textContent = 'Reset stats';
+
+  const closeBtn = document.createElement('button');
+  closeBtn.className = 'close';
+  closeBtn.textContent = 'Close';
+
+  panel.append(h, labReciter, labSilent, labWidth, resetBtn, closeBtn);
+  modal.appendChild(panel);
+  root.appendChild(modal);
 
   reciter.addEventListener('change', () => onChange({ reciter: reciter.value }));
   silent.addEventListener('change', () => onChange({ silentLetterColorOn: silent.checked }));
-  sw.addEventListener('change', () => onChange({ strokeWidth: parseInt(sw.value, 10) }));
-  modal.querySelector('.reset-stats').addEventListener('click', onResetStats);
-  modal.querySelector('.close').addEventListener('click', () => { modal.remove(); onClose?.(); });
+  sw.addEventListener('change', () => {
+    const v = parseInt(sw.value, 10);
+    if (Number.isFinite(v) && v >= 1 && v <= 20) onChange({ strokeWidth: v });
+  });
+  resetBtn.addEventListener('click', onResetStats);
+  closeBtn.addEventListener('click', () => { modal.remove(); onClose?.(); });
 
   return { close: () => { modal.remove(); onClose?.(); } };
 }

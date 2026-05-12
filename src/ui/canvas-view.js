@@ -39,6 +39,9 @@ export function mountCanvasView(root, { onCommit, strokeColor, strokeWidth }) {
   return {
     canvas,
     clear: () => input.clear(),
-    onUndoClick: (cb) => undoBtn.addEventListener('click', cb)
+    onUndoClick: (cb) => undoBtn.addEventListener('click', cb),
+    destroy: () => {
+      window.removeEventListener('resize', resize);
+    }
   };
 }
