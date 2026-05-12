@@ -10,17 +10,17 @@ test('quran-loader: fetches the bundled JSON once and serves verses', async () =
     calls++;
     return { ok: true, json: async () => fakeData };
   };
-  await loadQuran();
+  await loadQuran('indopak');
   assert.equal(getVerse(1, 1), 'بِسْمِ');
   assert.equal(getVerse(1, 2), 'ٱلْحَمْدُ');
-  await loadQuran();
+  await loadQuran('indopak');
   assert.equal(calls, 1, 'fetch must only run once due to cache');
 });
 
 test('quran-loader: throws if verse is out of range', async () => {
   _resetForTests();
   globalThis.fetch = async () => ({ ok: true, json: async () => ({ '1': { verses: { '1': 'x' } } }) });
-  await loadQuran();
+  await loadQuran('indopak');
   assert.throws(() => getVerse(1, 99), /out of range/);
 });
 
@@ -50,6 +50,6 @@ test('quran-loader: failed fetch can be retried', async () => {
   };
   await assert.rejects(loadQuran(), /network/);
   // Second call should re-fetch and succeed (proves inflight was cleared)
-  await loadQuran();
+  await loadQuran('indopak');
   assert.equal(calls, 2);
 });

@@ -9,7 +9,6 @@ import { align } from './compare/aligner.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import { recordError, resetStats } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
-import { computeKeypadLetters } from './keypad/keypad-letters.js';
 
 const state = {
   surah: 1, fromAyah: 1, toAyah: 1,
@@ -30,8 +29,8 @@ async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js').catch(() => {});
   }
-  await loadQuran();
   state.settings = await getSettings();
+  await loadQuran(state.settings.script);
 
   const headerEl = document.getElementById('header');
   const verseEl  = document.getElementById('verse-display');
@@ -40,15 +39,21 @@ async function init() {
   verseDisplayApi = mountVerseDisplay(verseEl, { onPlayVerse: playCurrentVerse });
   keypadApi = mountKeypad(keypadEl, {
     onSubmit: handleSubmit,
-    letters: [],
     settings: state.settings
   });
 
   mountHeader(headerEl, {
-    initial: { surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah },
+    initial: { surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah, script: state.settings.script },
     onChange: handleRangeChange,
-    onOpenSettings: openSettings
+    onOpenSettings: openSettings,
+    onScriptToggle: handleScriptToggle
   });
+}
+
+async function handleScriptToggle(nextScript) {
+  state.settings = await updateSettings({ script: nextScript });
+  await loadQuran(nextScript);
+  handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah });
 }
 
 function handleRangeChange({ surah, fromAyah, toAyah }) {
@@ -70,7 +75,6 @@ function handleRangeChange({ surah, fromAyah, toAyah }) {
   };
   verseDisplayApi.reset();
   currentVerseLine = verseDisplayApi.startNewVerse();
-  keypadApi.setLetters(computeKeypadLetters(state.parsedVerses));
   keypadApi.clearInput();
 }
 

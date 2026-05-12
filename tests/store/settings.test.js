@@ -25,6 +25,12 @@ test('settings: persists updates and preserves untouched keys', async () => {
   assert.equal(s.font, DEFAULT_SETTINGS.font);
 });
 
+test('settings: defaults include script="indopak"', async () => {
+  const db = makeMockDb();
+  const s = await getSettings(db);
+  assert.equal(s.script, 'indopak');
+});
+
 test('settings: multiple updates merge correctly', async () => {
   const db = makeMockDb();
   await updateSettings({ reciter: 'A' }, db);

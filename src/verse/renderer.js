@@ -24,13 +24,8 @@ export function renderUserWord(container, alignment) {
     const letter = document.createElement('span');
     letter.className = 'glyph__letter';
 
-    if (r.letterMatch === 'missing') {
-      letter.textContent = r.expected.letter;
-      letter.classList.add('mistake');
-    } else {
-      letter.textContent = r.expected.letter;
-      if (r.letterMatch !== 'ok') letter.classList.add('mistake');
-    }
+    letter.textContent = r.expected.letter;
+    if (r.letterMatch !== 'ok') letter.classList.add('mistake');
     g.appendChild(letter);
 
     for (const dn of r.expected.diacritics) {
@@ -55,11 +50,17 @@ export function renderUserWord(container, alignment) {
   return word;
 }
 
-// Render the CANONICAL verse with green highlights on letters/harakat the user got correct.
+// Render the CANONICAL verse with green highlights on the user's MISTAKES (what they need to correct).
 export function renderCorrectVerse(container, expectedGlyphsPerWord, wordAlignments) {
   const line = document.createElement('div');
   line.className = 'correct-line';
+  const label = document.createElement('div');
+  label.className = 'correct-label';
+  label.textContent = 'Correction:';
+  line.appendChild(label);
 
+  const wordsEl = document.createElement('div');
+  wordsEl.className = 'correct-words';
   for (let wi = 0; wi < expectedGlyphsPerWord.length; wi++) {
     const expectedWord = expectedGlyphsPerWord[wi];
     const alignment = wordAlignments[wi];
@@ -75,21 +76,22 @@ export function renderCorrectVerse(container, expectedGlyphsPerWord, wordAlignme
       const letter = document.createElement('span');
       letter.className = 'glyph__letter';
       letter.textContent = expected.letter;
-      if (r && r.letterMatch === 'ok') letter.classList.add('correct');
+      if (!r || r.letterMatch !== 'ok') letter.classList.add('correct');
       g.appendChild(letter);
 
       for (const dn of expected.diacritics) {
         const dia = document.createElement('span');
         dia.className = 'dia';
         dia.textContent = DIACRITIC_CHAR[dn] || '';
-        if (r && r.diacriticMatch === 'ok') dia.classList.add('correct');
+        if (!r || r.diacriticMatch !== 'ok') dia.classList.add('correct');
         g.appendChild(dia);
       }
       wordEl.appendChild(g);
     }
-    line.appendChild(wordEl);
-    line.appendChild(document.createTextNode(' '));
+    wordsEl.appendChild(wordEl);
+    wordsEl.appendChild(document.createTextNode(' '));
   }
+  line.appendChild(wordsEl);
   container.appendChild(line);
 }
 

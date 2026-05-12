@@ -5,7 +5,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   font: 'NotoNaskhArabic',
   silentLetterColorOn: true,
   strokeColor: '#e2e8f0',
-  strokeWidth: 4
+  strokeWidth: 4,
+  script: 'indopak'
 });
 
 export async function getSettings(deps = { kvGet, kvPut }) {

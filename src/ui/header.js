@@ -1,6 +1,6 @@
 import { SURAHS, getSurah } from '../data/surah-metadata.js';
 
-export function mountHeader(root, { onChange, onOpenSettings, initial }) {
+export function mountHeader(root, { onChange, onOpenSettings, onScriptToggle, initial }) {
   root.innerHTML = '';
   const surahSel = document.createElement('select');
   surahSel.className = 'surah';
@@ -17,10 +17,20 @@ export function mountHeader(root, { onChange, onOpenSettings, initial }) {
   const toInput = document.createElement('input');
   toInput.className = 'to'; toInput.type = 'number'; toInput.min = '1'; toInput.value = String(initial.toAyah);
 
+  const scriptBtn = document.createElement('button');
+  scriptBtn.className = 'script-toggle';
+  scriptBtn.textContent = (initial.script === 'uthmani') ? 'Uthmani' : 'Indo-Pak';
+  scriptBtn.title = 'Toggle script (Indo-Pak / Uthmani)';
+  scriptBtn.addEventListener('click', () => {
+    const next = scriptBtn.textContent === 'Indo-Pak' ? 'uthmani' : 'indopak';
+    scriptBtn.textContent = next === 'uthmani' ? 'Uthmani' : 'Indo-Pak';
+    if (onScriptToggle) onScriptToggle(next);
+  });
+
   const settingsBtn = document.createElement('button');
   settingsBtn.className = 'settings'; settingsBtn.textContent = '⚙'; settingsBtn.title = 'Settings';
 
-  root.append(surahSel, document.createTextNode(' From '), fromInput, document.createTextNode(' To '), toInput, settingsBtn);
+  root.append(surahSel, document.createTextNode(' From '), fromInput, document.createTextNode(' To '), toInput, scriptBtn, settingsBtn);
 
   function emit() {
     const surah = parseInt(surahSel.value, 10);

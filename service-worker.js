@@ -1,10 +1,11 @@
-const CACHE = 'qhp-v2';
+const CACHE = 'qhp-v3';
 const ASSETS = [
   './',
   './index.html',
   './styles.css',
   './manifest.webmanifest',
   './assets/quran/quran-indopak.json',
+  './assets/quran/quran-uthmani.json',
   './assets/icons/icon-192.png',
   './assets/icons/icon-512.png'
 ];
