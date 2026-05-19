@@ -22,3 +22,18 @@ export async function resetStats(deps = { counterIncrement, counterAll, counterC
     deps.counterClear('diacriticErrors')
   ]);
 }
+
+// Returns the top-n (letter, diacritic) error counts sorted desc.
+// `window` arg reserved for future timestamped rollup; not yet implemented.
+export async function getWorst(n, deps = { counterAll }) {
+  const [letters, dias] = await Promise.all([
+    deps.counterAll('letterErrors'),
+    deps.counterAll('diacriticErrors')
+  ]);
+  const items = [
+    ...Object.entries(letters).map(([value, count]) => ({ kind: 'letter', value, count })),
+    ...Object.entries(dias).map(([value, count]) => ({ kind: 'diacritic', value, count }))
+  ];
+  items.sort((a, b) => b.count - a.count);
+  return items.slice(0, n);
+}
