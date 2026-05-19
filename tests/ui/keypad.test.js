@@ -77,3 +77,39 @@ test('keypad: flashWrong adds .shake to matching key', () => {
   const kaf = root.querySelectorAll('.key--letter').find(b => b.textContent === 'ك');
   assert.ok(kaf.classList.contains('shake'));
 });
+
+test('keypad: dagger-alif key exists on harakat row and fires onHarakat with ٰ', () => {
+  const { root, calls } = setup();
+  const k = root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ٰ'));
+  assert.ok(k, 'dagger-alif key missing');
+  k.dispatch('click');
+  assert.deepEqual(calls.harakat, ['ٰ']);
+});
+
+test('keypad: madda key exists on harakat row and fires onHarakat with ٓ', () => {
+  const { root, calls } = setup();
+  const k = root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ٓ'));
+  assert.ok(k, 'madda key missing');
+  k.dispatch('click');
+  assert.deepEqual(calls.harakat, ['ٓ']);
+});
+
+test('keypad: → next ayah action key fires onNextAyah', () => {
+  const doc = makeDocument();
+  globalThis.document = doc;
+  const root = doc.createElement('div');
+  const calls = { next: 0 };
+  mountKeypad(root, {
+    onLetter: () => {}, onHarakat: () => {}, onBackspace: () => {},
+    onPlayAudio: () => {}, onNextAyah: () => calls.next++
+  });
+  const nextBtn = root.querySelectorAll('.key--action').find(b => /next/i.test(b.textContent));
+  assert.ok(nextBtn);
+  nextBtn.dispatch('click');
+  assert.equal(calls.next, 1);
+});
+
+test('keypad: harakat row has exactly 10 keys', () => {
+  const { root } = setup();
+  assert.equal(root.querySelectorAll('.key--harakah').length, 10);
+});

@@ -6,7 +6,9 @@ const HARAKAT = [
   { name: 'shadda',       char: 'ّ' },
   { name: 'tanween_fath', char: 'ً' },
   { name: 'tanween_damm', char: 'ٌ' },
-  { name: 'tanween_kasr', char: 'ٍ' }
+  { name: 'tanween_kasr', char: 'ٍ' },
+  { name: 'dagger_alif',  char: 'ٰ' },
+  { name: 'maddah_above', char: 'ٓ' }
 ];
 
 const LAYOUT = [
@@ -15,7 +17,7 @@ const LAYOUT = [
   ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
 ];
 
-export function mountKeypad(root, { onLetter, onHarakat, onBackspace, onPlayAudio }) {
+export function mountKeypad(root, { onLetter, onHarakat, onBackspace, onPlayAudio, onNextAyah }) {
   root.innerHTML = '';
 
   const harakatRow = document.createElement('div');
@@ -54,7 +56,8 @@ export function mountKeypad(root, { onLetter, onHarakat, onBackspace, onPlayAudi
   }
 
   actionRow.append(
-    mkKey('⌫', 'key--action back',  null, onBackspace),
+    mkKey('⌫', 'key--action back', null, onBackspace),
+    mkKey('→ next ayah', 'key--action next', null, () => onNextAyah && onNextAyah()),
     mkKey('▶ audio', 'key--action audio', null, onPlayAudio)
   );
 
