@@ -48,13 +48,13 @@ html, body {
 }
 .heatmap-empty { color: #9aa0a6; font-style: italic; }
 
-.keypad-harakat { display: grid; grid-template-columns: repeat(8, 1fr); gap: 4px; }
+.keypad-harakat { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }
 .keypad-row     { display: grid; gap: 4px; }
 .keypad-row:nth-child(1) { grid-template-columns: repeat(12, 1fr); }
 .keypad-row:nth-child(2) { grid-template-columns: repeat(11, 1fr); }
 .keypad-row:nth-child(3) { grid-template-columns: repeat(10, 1fr); }
-.keypad-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; }
+.keypad-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
 
 .key {
   min-height: 44px; font-size: 22px;
@@ -67,6 +67,7 @@ html, body {
 .key--harakah { font-size: 22px; min-height: 40px; }
 .key--action  { font-family: 'Nunito', 'Inter', system-ui, sans-serif; font-size: 14px; }
 .key--action.audio { background: #e8f6fe; color: #1cb0f6; border-color: #b9e3fb; }
+.key--action.next  { background: #f1fbe6; color: #1c1c1c; border-color: #b8e08a; }
 .key--glow {
   box-shadow: 0 0 0 2px #58cc02, 0 0 8px rgba(88,204,2,0.5);
   background: #f1fbe6;
