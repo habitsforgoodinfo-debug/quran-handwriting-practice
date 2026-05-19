@@ -5,7 +5,8 @@ import { LiveMatcher } from '../../src/compare/live-matcher.js';
 
 const HARAKAT = {
   fatha: 'َ', kasra: 'ِ', damma: 'ُ', sukun: 'ْ', shadda: 'ّ',
-  tanween_fath: 'ً', tanween_kasr: 'ٍ', tanween_damm: 'ٌ'
+  tanween_fath: 'ً', tanween_kasr: 'ٍ', tanween_damm: 'ٌ',
+  dagger_alif: 'ٰ', maddah_above: 'ٓ'
 };
 
 test('matcher: rejects wrong letter, no state change', () => {
@@ -87,4 +88,82 @@ test('matcher: nextHint reflects awaiting state', () => {
   assert.equal(m.nextHint().letter, 'ق');
   m.tryLetter('ق');
   assert.equal(m.nextHint().harakat, HARAKAT.damma);
+});
+
+test('matcher: shadda + dagger_alif required, any order seals — reverse order', () => {
+  // Minimal fake skeleton: one sound slot with two required marks.
+  const fake = [
+    { kind: 'sound', letter: 'ل', expectedHarakat: { required: ['shadda', 'dagger_alif'] }, wordIdx: 0, canonicalIdx: 0 },
+    { kind: 'wordEnd', wordIdx: 0 }
+  ];
+  const m = new LiveMatcher(fake);
+  assert.equal(m.tryLetter('ل').accepted, true);
+  assert.equal(m.tryHarakat('ٰ').accepted, true);
+  const sealed = m.tryHarakat('ّ');
+  assert.equal(sealed.accepted, true);
+  assert.equal(m.state.awaiting, 'done');
+});
+
+test('matcher: shadda + dagger_alif required, forward order seals', () => {
+  const fake = [
+    { kind: 'sound', letter: 'ل', expectedHarakat: { required: ['shadda', 'dagger_alif'] }, wordIdx: 0, canonicalIdx: 0 },
+    { kind: 'wordEnd', wordIdx: 0 }
+  ];
+  const m = new LiveMatcher(fake);
+  m.tryLetter('ل');
+  assert.equal(m.tryHarakat('ّ').accepted, true);
+  assert.equal(m.tryHarakat('ٰ').accepted, true);
+  assert.equal(m.state.awaiting, 'done');
+});
+
+test('matcher: rejectCount increments on wrong letter, resets on correct', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'));
+  assert.equal(m.state.rejectCount, 0);
+  m.tryLetter('ك');
+  assert.equal(m.state.rejectCount, 1);
+  m.tryLetter('ت');
+  assert.equal(m.state.rejectCount, 2);
+  m.tryLetter('ق');
+  assert.equal(m.state.rejectCount, 0);
+});
+
+test('matcher: rejectCount also tracks wrong harakat', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'));
+  m.tryLetter('ق');
+  assert.equal(m.state.rejectCount, 0);
+  m.tryHarakat('َ'); // wrong (expects damma)
+  assert.equal(m.state.rejectCount, 1);
+  m.tryHarakat('ُ'); // correct
+  assert.equal(m.state.rejectCount, 0);
+});
+
+test('matcher: waqf-eligible slot accepts sukun in place of canonical vowel', () => {
+  const sk = buildSkeleton('قُلْ هُوَ');
+  const m = new LiveMatcher(sk);
+  m.tryLetter('ق'); m.tryHarakat('ُ');
+  m.tryLetter('ل'); m.tryHarakat('ْ');
+  m.tryLetter('ه'); m.tryHarakat('ُ');
+  m.tryLetter('و');
+  const r = m.tryHarakat('ْ'); // sukun instead of canonical fatha
+  assert.equal(r.accepted, true);
+  assert.equal(r.complete, true);
+});
+
+test('matcher: non-waqf slot rejects sukun when canonical is not sukun', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ هُوَ'));
+  m.tryLetter('ق');
+  const r = m.tryHarakat('ْ'); // canonical for ق is damma; not last sound
+  assert.equal(r.accepted, false);
+});
+
+test('matcher: waqf-eligible tanween_fath slot accepts bare fatha', () => {
+  const fake = [
+    { kind: 'sound', letter: 'ا', expectedHarakat: { required: ['tanween_fath'] }, wordIdx: 0, canonicalIdx: 0, acceptWaqf: true },
+    { kind: 'wordEnd', wordIdx: 0 }
+  ];
+  const m = new LiveMatcher(fake);
+  assert.equal(m.tryLetter('ا').accepted, true);
+  const r = m.tryHarakat('َ');
+  assert.equal(r.accepted, true);
+  assert.equal(r.complete, true);
 });
