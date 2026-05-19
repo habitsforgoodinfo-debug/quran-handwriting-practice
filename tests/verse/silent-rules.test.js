@@ -1,0 +1,42 @@
+import { test } from 'node:test';
+import assert from 'node:assert/strict';
+import { parseWord } from '../../src/verse/parser.js';
+import { isSilentInWord } from '../../src/verse/silent-rules.js';
+
+function silentMap(word) {
+  const glyphs = parseWord(word);
+  return glyphs.map((_, i) => isSilentInWord(glyphs, i));
+}
+
+test('silent-rules: sun-letter alif after definite article (الشَّمْس)', () => {
+  const m = silentMap('الشَّمْسِ');
+  assert.equal(m[0], true);
+  assert.equal(m[1], true);
+});
+
+test('silent-rules: moon-letter lam after definite article (الْقَمَر) — lam pronounced', () => {
+  const m = silentMap('الْقَمَرِ');
+  assert.equal(m[0], true);
+  assert.equal(m[1], false);
+});
+
+test('silent-rules: plural-masculine alif (كَتَبُوا) — final alif silent', () => {
+  const m = silentMap('كَتَبُوا');
+  assert.equal(m[m.length - 1], true);
+});
+
+test('silent-rules: madd alif (قَالَ) — alif silent', () => {
+  const glyphs = parseWord('قَالَ');
+  assert.equal(isSilentInWord(glyphs, 1), true);
+});
+
+test('silent-rules: ordinary letter with harakat is NOT silent', () => {
+  const m = silentMap('قَالَ');
+  assert.equal(m[0], false);
+  assert.equal(m[2], false);
+});
+
+test('silent-rules: dagger alif is a combining mark, not a glyph', () => {
+  const glyphs = parseWord('هَٰذَا');
+  assert.ok(glyphs.every(g => g.letter !== 'ٰ'));
+});
