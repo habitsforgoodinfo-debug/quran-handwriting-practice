@@ -23,6 +23,18 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   reciter.value = settings.reciter;
   labReciter.appendChild(reciter);
 
+  const labHint = document.createElement('label');
+  labHint.append('Hint level ');
+  const hint = document.createElement('select');
+  hint.className = 'hint-level';
+  for (const lvl of ['letter','full','none']) {
+    const opt = document.createElement('option');
+    opt.value = lvl; opt.textContent = lvl;
+    hint.appendChild(opt);
+  }
+  hint.value = settings.hintLevel || 'letter';
+  labHint.appendChild(hint);
+
   const labSilent = document.createElement('label');
   labSilent.append('Show silent letters in distinct color ');
   const silent = document.createElement('input');
@@ -47,11 +59,12 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   closeBtn.className = 'close';
   closeBtn.textContent = 'Close';
 
-  panel.append(h, labReciter, labSilent, labWidth, resetBtn, closeBtn);
+  panel.append(h, labReciter, labHint, labSilent, labWidth, resetBtn, closeBtn);
   modal.appendChild(panel);
   root.appendChild(modal);
 
   reciter.addEventListener('change', () => onChange({ reciter: reciter.value }));
+  hint.addEventListener('change', () => onChange({ hintLevel: hint.value }));
   silent.addEventListener('change', () => onChange({ silentLetterColorOn: silent.checked }));
   sw.addEventListener('change', () => {
     const v = parseInt(sw.value, 10);

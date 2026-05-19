@@ -1,28 +1,18 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
-import { parseVerse } from './verse/parser.js';
-import { parseUserStream } from './compare/user-stream.js';
-import { smartMatch } from './compare/smart-match.js';
 import { mountHeader } from './ui/header.js';
-import { mountVerseDisplay } from './ui/verse-display.js';
+import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
-import { showSummary } from './ui/summary.js';
 import { getSettings, updateSettings } from './store/settings.js';
-import { recordError, resetStats } from './store/stats.js';
+import { recordError, getWorst, resetStats } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
 
 const state = {
   surah: 1, fromAyah: 1, toAyah: 1,
-  parsedVerses: [],
-  cursor: { verseIdx: 0, wordIdx: 0 },
-  settings: null,
-  session: { wordsWritten: 0, wordsTotal: 0, letterErrors: {}, diacriticErrors: {}, letterErrorsTotal: 0, diacriticErrorsTotal: 0 }
+  settings: null
 };
-
 const player = new AyahPlayer();
-let verseDisplayApi = null;
-let keypadApi = null;
-let currentVerseLine = null;
+let practiceApi, keypadApi;
 
 async function init() {
   if ('serviceWorker' in navigator) {
@@ -31,14 +21,17 @@ async function init() {
   state.settings = await getSettings();
   await loadQuran(state.settings.script);
 
-  const headerEl = document.getElementById('header');
-  const verseEl  = document.getElementById('verse-display');
-  const keypadEl = document.getElementById('keypad-view');
+  const headerEl   = document.getElementById('header');
+  const practiceEl = document.getElementById('verse-display');
+  const keypadEl   = document.getElementById('keypad-view');
 
-  verseDisplayApi = mountVerseDisplay(verseEl, { onPlayVerse: playCurrentVerse });
+  practiceApi = mountPracticeView(practiceEl, { onAllVersesComplete: () => {} });
+
   keypadApi = mountKeypad(keypadEl, {
-    onSubmit: handleSubmit,
-    settings: state.settings
+    onLetter:    handleLetter,
+    onHarakat:   handleHarakat,
+    onBackspace: handleBackspace,
+    onPlayAudio: playCurrentVerse
   });
 
   mountHeader(headerEl, {
@@ -47,6 +40,62 @@ async function init() {
     onOpenSettings: openSettings,
     onScriptToggle: handleScriptToggle
   });
+
+  handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah });
+}
+
+function refreshHints() {
+  const m = practiceApi.getMatcher();
+  if (!m) return keypadApi.setHint({});
+  const hint = m.nextHint();
+  const lvl = state.settings.hintLevel;
+  const out = {};
+  if (lvl !== 'none' && hint.letter) out.letter = hint.letter;
+  if (lvl === 'full' && hint.harakat) out.harakat = hint.harakat;
+  keypadApi.setHint(out);
+}
+
+async function refreshHeatmap() {
+  practiceApi.refreshHeatmap(await getWorst(3));
+}
+
+function handleLetter(ch) {
+  const m = practiceApi.getMatcher();
+  if (!m) return;
+  const r = m.tryLetter(ch);
+  if (!r.accepted) {
+    keypadApi.flashWrong(ch);
+    const expected = m.skeleton[m.state.slotIdx]?.letter || ch;
+    recordError({ kind: 'letter', value: expected });
+    refreshHeatmap();
+    return;
+  }
+  practiceApi.applyKeyResult(r);
+  refreshHints();
+  if (r.complete) refreshHeatmap();
+}
+
+function handleHarakat(ch) {
+  const m = practiceApi.getMatcher();
+  if (!m) return;
+  const r = m.tryHarakat(ch);
+  if (!r.accepted) {
+    keypadApi.flashWrong(ch);
+    recordError({ kind: 'diacritic', value: ch });
+    refreshHeatmap();
+    return;
+  }
+  practiceApi.applyKeyResult(r);
+  refreshHints();
+  if (r.complete) refreshHeatmap();
+}
+
+function handleBackspace() {
+  const m = practiceApi.getMatcher();
+  if (!m) return;
+  m.backspace();
+  practiceApi.applyKeyResult({ complete: false });
+  refreshHints();
 }
 
 async function handleScriptToggle(nextScript) {
@@ -56,106 +105,24 @@ async function handleScriptToggle(nextScript) {
 }
 
 function handleRangeChange({ surah, fromAyah, toAyah }) {
-  state.surah = surah;
-  state.fromAyah = fromAyah;
-  state.toAyah = toAyah;
-  state.parsedVerses = [];
-  const rawVerses = [];
-  for (let a = fromAyah; a <= toAyah; a++) {
-    const raw = getVerse(surah, a);
-    rawVerses.push(raw);
-    state.parsedVerses.push(parseVerse(raw));
-  }
-  state.cursor = { verseIdx: 0, wordIdx: 0 };
-  state.session = {
-    wordsWritten: 0,
-    wordsTotal: state.parsedVerses.reduce((s, v) => s + v.length, 0),
-    letterErrors: {}, diacriticErrors: {},
-    letterErrorsTotal: 0, diacriticErrorsTotal: 0
-  };
-  verseDisplayApi.reset();
-  verseDisplayApi.setRevealVerses(rawVerses);
-  currentVerseLine = verseDisplayApi.startNewVerse();
-  keypadApi.clearInput();
-}
-
-function handleSubmit(text) {
-  const userItems = parseUserStream(text);
-  if (userItems.filter(i => i.kind === 'letter').length === 0) return;
-
-  const { annotations, newCursor, completedVerses, verseAlignments } =
-    smartMatch(userItems, state.parsedVerses, state.cursor);
-
-  // Append annotated user text to the current verse's user line. Crossing
-  // verse boundaries within a single submit puts everything on the current
-  // line; correction lines below still print per verse correctly.
-  if (currentVerseLine) {
-    currentVerseLine.appendUserStream(annotations);
-  }
-
-  // Record per-letter / per-diacritic errors.
-  for (const [, verseMap] of verseAlignments.entries()) {
-    for (const [, results] of verseMap.entries()) {
-      for (const r of results) {
-        if (r.letterMatch === 'wrong') {
-          recordError({ kind: 'letter', value: r.expected.letter });
-          bumpSession('letter', r.expected.letter);
-        }
-        if (r.diacriticMatch === 'wrong' || r.diacriticMatch === 'missing') {
-          const d = r.expected.diacritics[0];
-          if (d) { recordError({ kind: 'diacritic', value: d }); bumpSession('diacritic', d); }
-        }
-      }
-    }
-  }
-
-  // Emit correction line for each completed verse, then start fresh user line.
-  for (const vi of completedVerses) {
-    const expectedVerse = state.parsedVerses[vi];
-    const verseResults = verseAlignments.get(vi) || new Map();
-    const byWord = new Map();
-    for (let wi = 0; wi < expectedVerse.length; wi++) {
-      byWord.set(wi, verseResults.get(wi) || []);
-    }
-    currentVerseLine.appendCorrectVerse(expectedVerse, byWord);
-    state.session.wordsWritten += expectedVerse.length;
-    if (vi < state.parsedVerses.length - 1) {
-      currentVerseLine = verseDisplayApi.startNewVerse();
-    }
-  }
-
-  state.cursor = newCursor;
-
-  if (newCursor.verseIdx >= state.parsedVerses.length) {
-    showSummary(document.body, {
-      sessionStats: state.session,
-      onPracticeAgain: () => handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah }),
-      onPickNew: () => {
-        const surahSel = document.querySelector('#header select.surah');
-        if (surahSel) { surahSel.focus(); surahSel.scrollIntoView({ behavior: 'smooth', block: 'start' }); }
-      }
-    });
-  }
-}
-
-function bumpSession(kind, value) {
-  const map = kind === 'letter' ? state.session.letterErrors : state.session.diacriticErrors;
-  map[value] = (map[value] || 0) + 1;
-  if (kind === 'letter') state.session.letterErrorsTotal++;
-  else state.session.diacriticErrorsTotal++;
+  state.surah = surah; state.fromAyah = fromAyah; state.toAyah = toAyah;
+  const verses = [];
+  for (let a = fromAyah; a <= toAyah; a++) verses.push(getVerse(surah, a));
+  practiceApi.setVerses(verses);
+  refreshHints();
+  refreshHeatmap();
 }
 
 function openSettings() {
   mountSettingsModal(document.body, {
     settings: state.settings,
-    onChange: async (patch) => { state.settings = await updateSettings(patch); },
-    onResetStats: () => resetStats()
+    onChange: async (patch) => { state.settings = await updateSettings(patch); refreshHints(); },
+    onResetStats: async () => { await resetStats(); refreshHeatmap(); }
   });
 }
 
 function playCurrentVerse() {
-  const ayah = state.fromAyah + state.cursor.verseIdx;
-  const url = buildAyahUrl(state.settings.reciter, state.surah, ayah);
+  const url = buildAyahUrl(state.settings.reciter, state.surah, state.fromAyah);
   player.play(url).catch(() => showRetryToast('Could not load audio.', playCurrentVerse));
 }
 
@@ -163,15 +130,12 @@ function showRetryToast(message, onRetry) {
   document.querySelectorAll('.toast').forEach(t => t.remove());
   const toast = document.createElement('div');
   toast.className = 'toast';
-  const text = document.createElement('span');
-  text.textContent = message + ' ';
+  const text = document.createElement('span'); text.textContent = message + ' ';
   const retry = document.createElement('button');
-  retry.textContent = 'Retry';
-  retry.className = 'toast-retry';
+  retry.textContent = 'Retry'; retry.className = 'toast-retry';
   retry.addEventListener('click', () => { toast.remove(); onRetry(); });
   const dismiss = document.createElement('button');
-  dismiss.textContent = '×';
-  dismiss.className = 'toast-dismiss';
+  dismiss.textContent = '×'; dismiss.className = 'toast-dismiss';
   dismiss.addEventListener('click', () => toast.remove());
   toast.append(text, retry, dismiss);
   document.body.appendChild(toast);
