@@ -40,3 +40,30 @@ test('silent-rules: dagger alif is a combining mark, not a glyph', () => {
   const glyphs = parseWord('هَٰذَا');
   assert.ok(glyphs.every(g => g.letter !== 'ٰ'));
 });
+
+import { firstSoundOverride } from '../../src/verse/silent-rules.js';
+
+test('firstSoundOverride: alif-wasla at verse start → fatha', () => {
+  const glyphs = parseWord('ٱلْحَمْدُ');
+  assert.equal(firstSoundOverride(glyphs, 0, true), 'fatha');
+});
+
+test('firstSoundOverride: bare alif at verse start with no vowel → fatha', () => {
+  const glyphs = parseWord('الْحَمْدُ');
+  assert.equal(firstSoundOverride(glyphs, 0, true), 'fatha');
+});
+
+test('firstSoundOverride: alif-wasla NOT at verse start → null', () => {
+  const glyphs = parseWord('ٱلْحَمْدُ');
+  assert.equal(firstSoundOverride(glyphs, 0, false), null);
+});
+
+test('firstSoundOverride: leading letter with diacritic → null', () => {
+  const glyphs = parseWord('قَالَ');
+  assert.equal(firstSoundOverride(glyphs, 0, true), null);
+});
+
+test('firstSoundOverride: only fires at index 0', () => {
+  const glyphs = parseWord('ٱلْحَمْدُ');
+  assert.equal(firstSoundOverride(glyphs, 1, true), null);
+});

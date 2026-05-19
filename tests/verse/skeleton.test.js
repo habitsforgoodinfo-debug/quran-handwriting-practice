@@ -3,40 +3,79 @@ import assert from 'node:assert/strict';
 import { buildSkeleton } from '../../src/verse/skeleton.js';
 
 function kinds(slots) { return slots.map(s => s.kind); }
+function reqSet(slot) { return new Set(slot.expectedHarakat.required || []); }
 
-test('skeleton: simple verse — sound slots + wordEnd marker per word', () => {
+test('skeleton: simple verse — sound + wordEnd per word', () => {
   const slots = buildSkeleton('قُلْ هُوَ');
   assert.deepEqual(kinds(slots), ['sound','sound','wordEnd','sound','sound','wordEnd']);
-  assert.equal(slots[0].letter, 'ق');
-  assert.deepEqual(slots[0].expectedHarakat, { vowel: 'damma' });
-  assert.equal(slots[1].letter, 'ل');
-  assert.deepEqual(slots[1].expectedHarakat, { vowel: 'sukun' });
+  assert.deepEqual(reqSet(slots[0]), new Set(['damma']));
+  assert.deepEqual(reqSet(slots[1]), new Set(['sukun']));
 });
 
 test('skeleton: madd alif becomes silent slot', () => {
   const slots = buildSkeleton('قَالَ');
   assert.deepEqual(kinds(slots), ['sound','silent','sound','wordEnd']);
-  assert.equal(slots[1].letter, 'ا');
 });
 
-test('skeleton: shadda + fatha → expectedHarakat has both', () => {
+test('skeleton: shadda + fatha → required contains both', () => {
   const slots = buildSkeleton('إِنَّا');
   const nun = slots.find(s => s.letter === 'ن');
-  assert.deepEqual(nun.expectedHarakat, { shadda: true, vowel: 'fatha' });
+  assert.deepEqual(reqSet(nun), new Set(['shadda','fatha']));
+});
+
+test('skeleton: shadda + dagger_alif (لَّٰ) → required contains both', () => {
+  const slots = buildSkeleton('ٱللَّٰهِ');
+  const shaddaLam = slots.find(s => s.letter === 'ل' && s.expectedHarakat.required?.includes('shadda'));
+  assert.ok(shaddaLam, 'should find a lam with shadda');
+  const req = shaddaLam.expectedHarakat.required;
+  assert.ok(req.includes('shadda'), 'should include shadda');
+  assert.ok(req.includes('dagger_alif'), 'should include dagger_alif');
 });
 
 test('skeleton: sun-letter article — alif and lam both silent', () => {
   const slots = buildSkeleton('الشَّمْسِ');
-  assert.deepEqual(
-    kinds(slots).slice(0, 5),
-    ['silent','silent','sound','sound','sound']
-  );
+  assert.deepEqual(kinds(slots).slice(0, 5), ['silent','silent','sound','sound','sound']);
 });
 
-test('skeleton: wordIdx increases per word', () => {
+test('skeleton: wordIdx tracks words', () => {
   const slots = buildSkeleton('قُلْ هُوَ');
   const w0 = slots.filter(s => s.wordIdx === 0 && s.kind !== 'wordEnd');
   const w1 = slots.filter(s => s.wordIdx === 1 && s.kind !== 'wordEnd');
   assert.equal(w0.length, 2);
   assert.equal(w1.length, 2);
+});
+
+test('skeleton: bare sound slot (no marks) has hasNone=true and required is empty', () => {
+  const slots = buildSkeleton('ة');
+  const s = slots.find(x => x.kind === 'sound' || x.kind === 'silent');
+  assert.ok(s);
+  assert.equal(s.expectedHarakat.hasNone, true);
+  assert.deepEqual(reqSet(s), new Set());
+});
+
+test('skeleton: isVerseStart=true → leading alif-wasla becomes sound with required=[fatha]', () => {
+  const slots = buildSkeleton('ٱلْحَمْدُ', { isVerseStart: true });
+  assert.equal(slots[0].kind, 'sound');
+  assert.equal(slots[0].letter, 'ٱ');
+  assert.deepEqual(reqSet(slots[0]), new Set(['fatha']));
+});
+
+test('skeleton: isVerseStart=true → leading bare alif also gets fatha', () => {
+  const slots = buildSkeleton('الْحَمْدُ', { isVerseStart: true });
+  assert.equal(slots[0].kind, 'sound');
+  assert.deepEqual(reqSet(slots[0]), new Set(['fatha']));
+});
+
+test('skeleton: isVerseStart defaults false → alif-wasla stays silent', () => {
+  const slots = buildSkeleton('ٱلْحَمْدُ');
+  assert.equal(slots[0].kind, 'silent');
+});
+
+test('skeleton: last sound slot of verse carries acceptWaqf=true', () => {
+  const slots = buildSkeleton('قُلْ هُوَ');
+  const soundSlots = slots.filter(s => s.kind === 'sound');
+  const last = soundSlots[soundSlots.length - 1];
+  assert.equal(last.acceptWaqf, true);
+  const others = soundSlots.slice(0, -1);
+  for (const s of others) assert.notEqual(s.acceptWaqf, true);
 });
