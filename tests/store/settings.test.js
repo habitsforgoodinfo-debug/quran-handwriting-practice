@@ -39,3 +39,17 @@ test('settings: multiple updates merge correctly', async () => {
   assert.equal(s.reciter, 'A');
   assert.equal(s.strokeWidth, 7);
 });
+
+test('settings: defaults include hintLevel="letter" and strict=false', async () => {
+  const db = makeMockDb();
+  const s = await getSettings(db);
+  assert.equal(s.hintLevel, 'letter');
+  assert.equal(s.strict, false);
+});
+
+test('settings: hintLevel can be updated and persists', async () => {
+  const db = makeMockDb();
+  await updateSettings({ hintLevel: 'full' }, db);
+  const s = await getSettings(db);
+  assert.equal(s.hintLevel, 'full');
+});

@@ -6,7 +6,9 @@ export const DEFAULT_SETTINGS = Object.freeze({
   silentLetterColorOn: true,
   strokeColor: '#e2e8f0',
   strokeWidth: 4,
-  script: 'indopak'
+  script: 'indopak',
+  hintLevel: 'letter',
+  strict: false
 });
 
 export async function getSettings(deps = { kvGet, kvPut }) {
