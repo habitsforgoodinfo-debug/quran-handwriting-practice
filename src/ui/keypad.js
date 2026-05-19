@@ -1,38 +1,12 @@
-const HARAKAT_BASIC = [
-  { name: 'fatha', char: 'َ', longChar: 'َٓ' },
-  { name: 'kasra', char: 'ِ', longChar: 'ِٓ' },
-  { name: 'damma', char: 'ُ', longChar: 'ُٓ' },
-  { name: 'sukun', char: 'ْ', longChar: 'ْٓ' }
-];
-const HARAKAT_EXTRA = [
+const HARAKAT = [
+  { name: 'fatha',        char: 'َ' },
+  { name: 'damma',        char: 'ُ' },
+  { name: 'kasra',        char: 'ِ' },
+  { name: 'sukun',        char: 'ْ' },
   { name: 'shadda',       char: 'ّ' },
   { name: 'tanween_fath', char: 'ً' },
-  { name: 'tanween_kasr', char: 'ٍ' },
   { name: 'tanween_damm', char: 'ٌ' },
-  { name: 'dagger_alif',  char: 'ٰ' }
-];
-const MADD_KEY = { char: 'ٓ', longChar: 'ٓۤ' };
-
-// Additional combining marks that appear in the bundled data. Surfaced in a
-// secondary "extras" row above the letter grid. Each tap appends the mark
-// verbatim — no long-press behaviour.
-const EXTRAS = [
-  { name: 'hamza_above',     char: 'ٔ' },  // U+0654
-  { name: 'hamza_below',     char: 'ٕ' },  // U+0655
-  { name: 'high_sukun',      char: 'ۡ' },  // U+06E1 (Indo-Pak sukun substitute)
-  { name: 'small_waw',       char: 'ۥ' },  // U+06E5
-  { name: 'small_yeh',       char: 'ۦ' },  // U+06E6
-  { name: 'small_high_noon', char: 'ۨ' },  // U+06E8
-  { name: 'high_madda',      char: 'ۤ' },  // U+06E4
-  { name: 'small_low_meem',  char: 'ۭ' },  // U+06ED
-  { name: 'high_meem_iso',   char: 'ۢ' },  // U+06E2
-  { name: 'high_sad_lam',    char: 'ۖ' },  // U+06D6 (pause: sili)
-  { name: 'high_qaf_lam',    char: 'ۗ' },  // U+06D7 (pause: qif)
-  { name: 'high_meem_init',  char: 'ۘ' },  // U+06D8 (pause: mim)
-  { name: 'high_lam',        char: 'ۙ' },  // U+06D9 (pause: la)
-  { name: 'high_jeem',       char: 'ۚ' },  // U+06DA (pause: jim)
-  { name: 'high_three_dots', char: 'ۛ' },  // U+06DB
-  { name: 'end_of_ayah',     char: '۝' }   // U+06DD
+  { name: 'tanween_kasr', char: 'ٍ' }
 ];
 
 const LAYOUT = [
@@ -41,20 +15,11 @@ const LAYOUT = [
   ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
 ];
 
-const LONG_PRESS_MS = 450;
-
-export function mountKeypad(root, { onSubmit }) {
+export function mountKeypad(root, { onLetter, onHarakat, onBackspace, onPlayAudio }) {
   root.innerHTML = '';
-  let input = '';
-
-  const inputEl = document.createElement('div');
-  inputEl.className = 'keypad-input';
 
   const harakatRow = document.createElement('div');
   harakatRow.className = 'keypad-harakat';
-
-  const extrasRow = document.createElement('div');
-  extrasRow.className = 'keypad-extras';
 
   const lettersWrap = document.createElement('div');
   lettersWrap.className = 'keypad-letters';
@@ -62,106 +27,49 @@ export function mountKeypad(root, { onSubmit }) {
   const actionRow = document.createElement('div');
   actionRow.className = 'keypad-actions';
 
-  root.append(inputEl, harakatRow, extrasRow, lettersWrap, actionRow);
+  root.append(harakatRow, lettersWrap, actionRow);
 
-  function render() { inputEl.textContent = input || ' '; }
-  function append(s) { input += s; render(); }
-  function backspace() {
-    const arr = Array.from(input);
-    arr.pop();
-    input = arr.join('');
-    render();
-  }
-  function clear() { input = ''; render(); }
+  const byChar = new Map();
 
-  function makeLongPressKey(label, shortChar, longChar, className) {
+  function mkKey(label, cls, ch, handler) {
     const b = document.createElement('button');
-    b.className = className;
+    b.className = 'key ' + cls;
     b.textContent = label;
-    let timer = null;
-    let fired = false;
-    b.addEventListener('pointerdown', (e) => {
-      e.preventDefault();
-      fired = false;
-      timer = setTimeout(() => {
-        fired = true;
-        append(longChar);
-        b.classList.add('long-pressed');
-      }, LONG_PRESS_MS);
-    });
-    b.addEventListener('pointerup', () => {
-      if (timer) clearTimeout(timer);
-      if (!fired) append(shortChar);
-      b.classList.remove('long-pressed');
-    });
-    b.addEventListener('pointerleave', () => {
-      if (timer) clearTimeout(timer);
-      b.classList.remove('long-pressed');
-    });
-    b.addEventListener('pointercancel', () => {
-      if (timer) clearTimeout(timer);
-      b.classList.remove('long-pressed');
-    });
+    b.addEventListener('click', handler);
+    if (ch) byChar.set(ch, b);
     return b;
   }
 
-  for (const h of HARAKAT_BASIC) {
-    harakatRow.appendChild(makeLongPressKey('ـ' + h.char, h.char, h.longChar, 'key key--harakah'));
-  }
-  for (const h of HARAKAT_EXTRA) {
-    const b = document.createElement('button');
-    b.className = 'key key--harakah';
-    b.textContent = 'ـ' + h.char;
-    b.addEventListener('click', () => append(h.char));
-    harakatRow.appendChild(b);
-  }
-  harakatRow.appendChild(makeLongPressKey('ـ' + MADD_KEY.char, MADD_KEY.char, MADD_KEY.longChar, 'key key--harakah key--madd'));
-
-  // Extras row — additional combining marks present in the bundled data.
-  for (const m of EXTRAS) {
-    const b = document.createElement('button');
-    b.className = 'key key--extra';
-    b.textContent = 'ـ' + m.char;
-    b.addEventListener('click', () => append(m.char));
-    extrasRow.appendChild(b);
+  for (const h of HARAKAT) {
+    harakatRow.appendChild(mkKey('ـ' + h.char, 'key--harakah', h.char, () => onHarakat(h.char)));
   }
 
   for (const row of LAYOUT) {
     const rowEl = document.createElement('div');
     rowEl.className = 'keypad-row';
     for (const ch of row) {
-      const b = document.createElement('button');
-      b.className = 'key key--letter';
-      b.textContent = ch;
-      b.addEventListener('click', () => append(ch));
-      rowEl.appendChild(b);
+      rowEl.appendChild(mkKey(ch, 'key--letter', ch, () => onLetter(ch)));
     }
     lettersWrap.appendChild(rowEl);
   }
 
-  const mk = (label, cls, handler) => {
-    const b = document.createElement('button');
-    b.className = `key key--action ${cls}`;
-    b.textContent = label;
-    b.addEventListener('click', handler);
-    return b;
-  };
   actionRow.append(
-    mk('Space', 'space',   () => append(' ')),
-    mk('⌫',    'back',    backspace),
-    mk('Clear', 'clear',   clear),
-    mk('Submit','submit',  () => {
-      if (input.trim().length === 0) return;
-      const text = input;
-      clear();
-      onSubmit(text);
-    })
+    mkKey('⌫', 'key--action back',  null, onBackspace),
+    mkKey('▶ audio', 'key--action audio', null, onPlayAudio)
   );
 
-  render();
-  return {
-    clearInput: clear,
-    focus: () => {},
-    destroy: () => { root.innerHTML = ''; }
-  };
+  function setHint({ letter, harakat } = {}) {
+    for (const el of byChar.values()) el.classList.remove('key--glow');
+    if (letter)  byChar.get(letter)?.classList.add('key--glow');
+    if (harakat) byChar.get(harakat)?.classList.add('key--glow');
+  }
+
+  function flashWrong(ch) {
+    const el = byChar.get(ch);
+    if (!el) return;
+    el.classList.add('shake');
+    setTimeout(() => el.classList.remove('shake'), 250);
+  }
+
+  return { setHint, flashWrong, destroy: () => { root.innerHTML = ''; } };
 }

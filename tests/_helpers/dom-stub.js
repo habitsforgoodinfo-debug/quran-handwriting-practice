@@ -100,12 +100,16 @@ class StubNode {
   }
 }
 
-export function installDomStub() {
-  globalThis.document = {
+export function makeDocument() {
+  return {
     createElement: (tag) => new StubNode(tag),
     createTextNode: (text) => { const n = new StubNode('#text'); n._text = String(text); return n; },
     body: new StubNode('body')
   };
+}
+
+export function installDomStub() {
+  globalThis.document = makeDocument();
   return { StubNode };
 }
 
