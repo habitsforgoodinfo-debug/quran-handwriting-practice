@@ -23,7 +23,7 @@ export function mountPracticeView(root, { onAllVersesComplete } = {}) {
 
   function loadVerse(idx) {
     verseIdx = idx;
-    skeleton = buildSkeleton(rawVerses[idx]);
+    skeleton = buildSkeleton(rawVerses[idx], { isVerseStart: true });
     matcher = new LiveMatcher(skeleton);
     render();
   }
@@ -69,23 +69,27 @@ export function mountPracticeView(root, { onAllVersesComplete } = {}) {
     }
   }
 
+  function advance({ skipped = false } = {}) {
+    if (verseIdx + 1 < rawVerses.length) {
+      loadVerse(verseIdx + 1);
+    } else {
+      matcher = null;
+      banner.textContent = '✓ range complete — pick a new range above';
+      banner.style.display = '';
+      if (onAllVersesComplete) onAllVersesComplete();
+    }
+  }
+
   function applyKeyResult(result) {
     if (!matcher) return;
     render();
-    if (result?.complete) {
-      if (verseIdx + 1 < rawVerses.length) {
-        loadVerse(verseIdx + 1);
-      } else {
-        banner.textContent = '✓ range complete — pick a new range above';
-        banner.style.display = '';
-        if (onAllVersesComplete) onAllVersesComplete();
-      }
-    }
+    if (result?.complete) advance({ skipped: false });
   }
 
   return {
     setVerses,
     applyKeyResult,
+    advance,
     refreshHeatmap: (worst) => heatmap.update(worst),
     getMatcher: () => matcher
   };

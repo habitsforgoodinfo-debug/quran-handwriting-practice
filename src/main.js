@@ -31,7 +31,8 @@ async function init() {
     onLetter:    handleLetter,
     onHarakat:   handleHarakat,
     onBackspace: handleBackspace,
-    onPlayAudio: playCurrentVerse
+    onPlayAudio: playCurrentVerse,
+    onNextAyah:  handleNextAyah
   });
 
   mountHeader(headerEl, {
@@ -47,11 +48,23 @@ async function init() {
 function refreshHints() {
   const m = practiceApi.getMatcher();
   if (!m) return keypadApi.setHint({});
+  const policy = state.settings.hintPolicy;
+  if (policy === 'none') return keypadApi.setHint({});
+
   const hint = m.nextHint();
-  const lvl = state.settings.hintLevel;
+  if (policy === 'always') {
+    keypadApi.setHint(hint);
+    return;
+  }
+  // policy === 'auto'
+  const rc = m.state.rejectCount;
+  if (rc === 0) {
+    keypadApi.setHint({});
+    return;
+  }
   const out = {};
-  if (lvl !== 'none' && hint.letter) out.letter = hint.letter;
-  if (lvl === 'full' && hint.harakat) out.harakat = hint.harakat;
+  if (m.state.awaiting === 'letter' && hint.letter) out.letter = hint.letter;
+  if (m.state.awaiting === 'harakat' && hint.harakat) out.harakat = hint.harakat;
   keypadApi.setHint(out);
 }
 
@@ -95,6 +108,11 @@ function handleBackspace() {
   if (!m) return;
   m.backspace();
   practiceApi.applyKeyResult({ complete: false });
+  refreshHints();
+}
+
+function handleNextAyah() {
+  practiceApi.advance({ skipped: true });
   refreshHints();
 }
 

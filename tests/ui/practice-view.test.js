@@ -42,3 +42,30 @@ test('practice-view: setVerses to empty array clears panes', () => {
   api.setVerses([]);
   assert.equal(root.querySelectorAll('.canonical-slot').length, 0);
 });
+
+test('practice-view: advance({skipped:true}) mid-verse loads next verse', () => {
+  const { root, api } = setup();
+  api.setVerses(['قُلْ', 'هُوَ']);
+  const m1 = api.getMatcher();
+  m1.tryLetter('ق');
+  api.advance({ skipped: true });
+  const m2 = api.getMatcher();
+  assert.notEqual(m1, m2);
+  const current = root.querySelectorAll('.canonical-slot--current')[0];
+  assert.equal(current.textContent, 'ه');
+});
+
+test('practice-view: advance from last verse shows range-complete banner', () => {
+  const { root, api, events } = setup();
+  api.setVerses(['قُلْ']);
+  api.advance({ skipped: true });
+  assert.ok(root.textContent.includes('range complete'));
+  assert.equal(events.complete, 1);
+});
+
+test('practice-view: first verse uses isVerseStart=true (leading ٱ becomes sound)', () => {
+  const { root, api } = setup();
+  api.setVerses(['ٱلْحَمْدُ']);
+  const current = root.querySelectorAll('.canonical-slot--current')[0];
+  assert.equal(current?.textContent, 'ٱ');
+});
