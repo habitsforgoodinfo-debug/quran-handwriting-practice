@@ -40,16 +40,44 @@ test('settings: multiple updates merge correctly', async () => {
   assert.equal(s.strokeWidth, 7);
 });
 
-test('settings: defaults include hintLevel="letter" and strict=false', async () => {
+test('settings: defaults include strict=false', async () => {
   const db = makeMockDb();
   const s = await getSettings(db);
-  assert.equal(s.hintLevel, 'letter');
   assert.equal(s.strict, false);
 });
 
-test('settings: hintLevel can be updated and persists', async () => {
+test('settings: hintPolicy can be updated and persists', async () => {
   const db = makeMockDb();
-  await updateSettings({ hintLevel: 'full' }, db);
+  await updateSettings({ hintPolicy: 'always' }, db);
   const s = await getSettings(db);
-  assert.equal(s.hintLevel, 'full');
+  assert.equal(s.hintPolicy, 'always');
+});
+
+test('settings: defaults include hintPolicy="auto"', async () => {
+  const db = makeMockDb();
+  const s = await getSettings(db);
+  assert.equal(s.hintPolicy, 'auto');
+  assert.equal(s.hintLevel, undefined);
+});
+
+test('settings: legacy hintLevel="none" migrates to hintPolicy="none"', async () => {
+  const db = makeMockDb();
+  db.map.set('settings', { hintLevel: 'none' });
+  const s = await getSettings(db);
+  assert.equal(s.hintPolicy, 'none');
+  assert.equal(s.hintLevel, undefined);
+});
+
+test('settings: legacy hintLevel="letter" migrates to hintPolicy="auto"', async () => {
+  const db = makeMockDb();
+  db.map.set('settings', { hintLevel: 'letter' });
+  const s = await getSettings(db);
+  assert.equal(s.hintPolicy, 'auto');
+});
+
+test('settings: legacy hintLevel="full" migrates to hintPolicy="auto"', async () => {
+  const db = makeMockDb();
+  db.map.set('settings', { hintLevel: 'full' });
+  const s = await getSettings(db);
+  assert.equal(s.hintPolicy, 'auto');
 });

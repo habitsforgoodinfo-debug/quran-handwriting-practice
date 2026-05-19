@@ -7,13 +7,23 @@ export const DEFAULT_SETTINGS = Object.freeze({
   strokeColor: '#e2e8f0',
   strokeWidth: 4,
   script: 'indopak',
-  hintLevel: 'letter',
+  hintPolicy: 'auto',
   strict: false
 });
 
+function migrate(stored) {
+  if (!stored) return {};
+  const out = { ...stored };
+  if ('hintLevel' in out) {
+    out.hintPolicy = out.hintLevel === 'none' ? 'none' : 'auto';
+    delete out.hintLevel;
+  }
+  return out;
+}
+
 export async function getSettings(deps = { kvGet, kvPut }) {
   const stored = await deps.kvGet('settings');
-  return { ...DEFAULT_SETTINGS, ...(stored || {}) };
+  return { ...DEFAULT_SETTINGS, ...migrate(stored) };
 }
 
 export async function updateSettings(patch, deps = { kvGet, kvPut }) {
