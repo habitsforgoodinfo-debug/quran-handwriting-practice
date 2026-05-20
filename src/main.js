@@ -10,7 +10,8 @@ import { startRapidFire } from './ui/rapid-fire.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
   recordError, recordAttempt, getAccuracy, getCoverage,
-  markVerseComplete, markVerseSkipped, resetStats
+  markVerseComplete, markVerseSkipped, resetStats,
+  getCompletedVerses
 } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
 import { chimeComplete } from './ui/feedback.js';
@@ -37,7 +38,8 @@ async function init() {
   const keypadEl   = document.getElementById('keypad-view');
 
   practiceApi = mountPracticeView(practiceEl, {
-    onVerseComplete: handleVerseComplete
+    onVerseComplete: handleVerseComplete,
+    onPrevAyah:      handlePrevAyah
   });
   practiceApi.setMeaningLookup(getWordMeaning);
 
@@ -130,6 +132,47 @@ function handleBackspace() {
   m.backspace();
   practiceApi.applyKeyResult({ complete: false });
   refreshHints();
+}
+
+async function handlePrevAyah() {
+  // If we're already in review, navigate further back; otherwise enter
+  // review mode showing the previously-completed verse.
+  const completed = await getCompletedVerses();
+  // Find the most recent completed entry strictly before current (surah, ayah).
+  const candidates = completed
+    .filter(v => !v.skipped &&
+      (v.surah < state.surah || (v.surah === state.surah && v.ayah < state.ayah)));
+  if (candidates.length === 0) {
+    // Nothing to show yet — gentle nudge.
+    showRetryToast('No previously-written ayahs yet.', () => {});
+    return;
+  }
+  const last = candidates[candidates.length - 1];
+  practiceApi.showReview(last);
+  // Reuse next-ayah handler to exit review and return to live verse.
+  keypadApi.setHandlers({
+    onLetter: () => {},
+    onHarakat: () => {},
+    onBackspace: exitReview,
+    onPlayAudio: () => playAyah(last.surah, last.ayah),
+    onNextAyah: exitReview
+  });
+}
+
+function exitReview() {
+  practiceApi.exitReview();
+  keypadApi.setHandlers({
+    onLetter:    handleLetter,
+    onHarakat:   handleHarakat,
+    onBackspace: handleBackspace,
+    onPlayAudio: playCurrentAyah,
+    onNextAyah:  handleNextAyah
+  });
+}
+
+function playAyah(surah, ayah) {
+  const url = buildAyahUrl(state.settings.reciter, surah, ayah);
+  player.play(url).catch(() => {});
 }
 
 function handleNextAyah() {

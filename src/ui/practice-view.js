@@ -2,18 +2,38 @@ import { buildSkeleton } from '../verse/skeleton.js';
 import { LiveMatcher } from '../compare/live-matcher.js';
 import { mountHeatmapStrip } from './heatmap-strip.js';
 import { _diacriticCharByName as CHAR_BY_NAME } from '../verse/parser.js';
+import { CHEATSHEET } from '../data/cheatsheet.js';
 
-export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
+export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
   root.innerHTML = '';
   root.className = (root.className || '') + ' practice-view';
 
+  // Top bar: prev-ayah arrow + position label.
+  const topBar = document.createElement('div'); topBar.className = 'practice-topbar';
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'practice-prev'; prevBtn.textContent = '← previous ayah';
+  prevBtn.title = 'Review the previous ayah you wrote';
+  prevBtn.addEventListener('click', () => onPrevAyah && onPrevAyah());
+  topBar.appendChild(prevBtn);
+
+  // Stacked panes:
+  //   .verse-stack   — Arabic on top, English meanings below, scroll in sync
+  //   .user-pane     — what the user has typed so far (souvenir line)
+  //   .cheatsheet    — short grammar / vocab notes, scrollable
+  const verseStack    = document.createElement('div'); verseStack.className = 'verse-stack';
   const canonicalPane = document.createElement('div'); canonicalPane.className = 'canonical-pane';
-  const divider       = document.createElement('div'); divider.className = 'pane-divider';
+  const meaningPane   = document.createElement('div'); meaningPane.className = 'meaning-pane';
+  verseStack.append(canonicalPane, meaningPane);
+
   const userPane      = document.createElement('div'); userPane.className = 'user-pane';
   const progressRoot  = document.createElement('div');
+  const cheatPane     = document.createElement('div'); cheatPane.className = 'cheatsheet';
   const banner        = document.createElement('div'); banner.className = 'range-complete-banner';
   banner.style.display = 'none';
-  root.append(canonicalPane, divider, userPane, progressRoot, banner);
+
+  root.append(topBar, verseStack, userPane, progressRoot, cheatPane, banner);
+
+  renderCheatsheet(cheatPane);
 
   const progressStrip = mountHeatmapStrip(progressRoot);
 
@@ -24,11 +44,17 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
   let skeleton = [];
   let matcher = null;
   let versePerfect = true;
+  let meaningLookup = null;
+  let reviewMode = false;
+  let reviewVerse = null;
+
+  function setMeaningLookup(fn) { meaningLookup = fn; }
 
   function loadCurrentVerse() {
     skeleton = buildSkeleton(rawText, { isVerseStart: true });
     matcher = new LiveMatcher(skeleton);
     versePerfect = true;
+    reviewMode = false; reviewVerse = null;
     render();
     updateProgress();
   }
@@ -38,7 +64,7 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     banner.style.display = 'none';
     banner.innerHTML = '';
     if (!rawText) {
-      canonicalPane.innerHTML = '';
+      canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
       userPane.innerHTML = '';
       matcher = null; skeleton = [];
       progressStrip.update(null);
@@ -47,7 +73,6 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     if (slide) {
       canonicalPane.classList.add('canonical-pane--sliding');
       userPane.classList.add('user-pane--sliding');
-      // Render after the slide-out finishes so the new verse slides in.
       setTimeout(() => {
         loadCurrentVerse();
         canonicalPane.classList.remove('canonical-pane--sliding');
@@ -60,7 +85,7 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
 
   function showRangeEnd(buttons = []) {
     matcher = null;
-    canonicalPane.innerHTML = '';
+    canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
     userPane.innerHTML = '';
     progressStrip.update(null);
     banner.innerHTML = '';
@@ -90,9 +115,6 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     return Math.max(0, ...skeleton.map(s => (s.wordIdx ?? -1) + 1));
   }
 
-  let meaningLookup = null; // (surah, ayah, wordIdx) => {m, role}|null
-  function setMeaningLookup(fn) { meaningLookup = fn; }
-
   function updateProgress() {
     if (!surahName) { progressStrip.update(null); return; }
     const wi = getCurrentWordIdx();
@@ -106,15 +128,7 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     });
   }
 
-  function render() {
-    if (!matcher) return;
-    canonicalPane.innerHTML = '';
-    // Group consecutive non-wordEnd slots by wordIdx into word blocks; each
-    // block stacks the Arabic slots above its English meaning.
-    const sealedUpTo = matcher.state.awaiting === 'harakat'
-      ? matcher.state.slotIdx
-      : matcher.state.slotIdx - 1;
-
+  function buildWordBlocks() {
     const blocks = [];
     let current = null;
     for (let i = 0; i < skeleton.length; i++) {
@@ -126,40 +140,91 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
       }
       current.slots.push({ slot, idx: i });
     }
+    return blocks;
+  }
 
+  function renderArabicWord(block, sealedUpTo, currentSlotIdx) {
+    const wordEl = document.createElement('span');
+    wordEl.className = 'verse-word';
+    for (const { slot, idx } of block.slots) {
+      const span = document.createElement('span');
+      const ornamentChars = (slot.expectedHarakat?.ornaments || [])
+        .map(n => CHAR_BY_NAME[n]).filter(Boolean).join('');
+      span.textContent = slot.letter + ornamentChars;
+      const classes = ['canonical-slot'];
+      if (slot.kind === 'silent') classes.push('canonical-slot--silent');
+      if (idx <= sealedUpTo) classes.push('canonical-slot--sealed');
+      else if (idx === currentSlotIdx && slot.kind === 'sound') classes.push('canonical-slot--current');
+      else classes.push('canonical-slot--future');
+      span.className = classes.join(' ');
+      wordEl.appendChild(span);
+    }
+    return wordEl;
+  }
+
+  function renderMeaningWord(block) {
+    const meaning = meaningLookup ? meaningLookup(surah, ayah, block.wordIdx) : null;
+    const cell = document.createElement('span');
+    cell.className = 'meaning-word';
+    if (!meaning) {
+      cell.appendChild(document.createElement('span')); // spacer
+      return cell;
+    }
+
+    // Grammar tag chip
+    if (meaning.grm) {
+      const grm = document.createElement('span');
+      grm.className = 'meaning-grm';
+      grm.textContent = meaning.grm;
+      cell.appendChild(grm);
+    }
+
+    // English meaning with role-coloring
+    const text = document.createElement('span');
+    text.className = 'meaning-text';
+    if (meaning.role) text.classList.add('meaning-text--' + meaning.role);
+    if (Array.isArray(meaning.parts) && meaning.parts.length) {
+      for (let i = 0; i < meaning.parts.length; i++) {
+        const p = meaning.parts[i];
+        const seg = document.createElement('span');
+        seg.className = 'meaning-part meaning-part--' + (p.k || 'noun');
+        seg.textContent = p.t;
+        if (p.root) seg.setAttribute('title', 'root ' + p.root);
+        if (i > 0) text.appendChild(document.createTextNode(' '));
+        text.appendChild(seg);
+      }
+    } else {
+      text.textContent = meaning.m || '';
+    }
+    cell.appendChild(text);
+
+    // Root + transliteration below
+    const sub = document.createElement('span');
+    sub.className = 'meaning-sub';
+    const tl = document.createElement('span');
+    tl.className = 'meaning-tl'; tl.textContent = meaning.tl || '';
+    sub.appendChild(tl);
+    if (meaning.root && meaning.root !== '—') {
+      const r = document.createElement('span');
+      r.className = 'meaning-root';
+      r.textContent = ' · ' + meaning.root;
+      sub.appendChild(r);
+    }
+    cell.appendChild(sub);
+    return cell;
+  }
+
+  function render() {
+    if (!matcher) return;
+    canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
+
+    const sealedUpTo = matcher.state.awaiting === 'harakat'
+      ? matcher.state.slotIdx
+      : matcher.state.slotIdx - 1;
+    const blocks = buildWordBlocks();
     for (const block of blocks) {
-      const wordEl = document.createElement('span');
-      wordEl.className = 'canonical-word';
-
-      const top = document.createElement('span'); top.className = 'canonical-word__top';
-      for (const { slot, idx } of block.slots) {
-        const span = document.createElement('span');
-        const ornamentChars = (slot.expectedHarakat?.ornaments || [])
-          .map(n => CHAR_BY_NAME[n]).filter(Boolean).join('');
-        span.textContent = slot.letter + ornamentChars;
-        const classes = ['canonical-slot'];
-        if (slot.kind === 'silent') classes.push('canonical-slot--silent');
-        if (idx <= sealedUpTo) classes.push('canonical-slot--sealed');
-        else if (idx === matcher.state.slotIdx && slot.kind === 'sound') classes.push('canonical-slot--current');
-        else classes.push('canonical-slot--future');
-        span.className = classes.join(' ');
-        top.appendChild(span);
-      }
-      wordEl.appendChild(top);
-
-      // Meaning row beneath the word.
-      const meaning = meaningLookup ? meaningLookup(surah, ayah, block.wordIdx) : null;
-      const bot = document.createElement('span'); bot.className = 'canonical-word__meaning';
-      if (meaning && meaning.m) {
-        if (meaning.role) bot.classList.add('canonical-word__meaning--' + meaning.role);
-        bot.textContent = meaning.m;
-        if (meaning.tl) bot.setAttribute('title', meaning.tl + (meaning.root ? ` (root: ${meaning.root})` : ''));
-      } else {
-        bot.textContent = ' '; // keep height so words align
-      }
-      wordEl.appendChild(bot);
-
-      canonicalPane.appendChild(wordEl);
+      canonicalPane.appendChild(renderArabicWord(block, sealedUpTo, matcher.state.slotIdx));
+      meaningPane.appendChild(renderMeaningWord(block));
     }
 
     userPane.innerHTML = '';
@@ -172,8 +237,39 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     }
   }
 
+  // Render a previous verse in read-only mode (no matcher state).
+  function showReview(verse) {
+    reviewMode = true; reviewVerse = verse;
+    const sk = buildSkeleton(verse.rawText, { isVerseStart: true });
+    canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
+    const blocks = [];
+    let cur = null;
+    for (let i = 0; i < sk.length; i++) {
+      const slot = sk[i];
+      if (slot.kind === 'wordEnd') { cur = null; continue; }
+      if (!cur || cur.wordIdx !== slot.wordIdx) { cur = { wordIdx: slot.wordIdx, slots: [] }; blocks.push(cur); }
+      cur.slots.push({ slot, idx: i });
+    }
+    for (const block of blocks) {
+      // All sealed for the review look.
+      canonicalPane.appendChild(renderArabicWord(block, sk.length, -1));
+      meaningPane.appendChild(renderMeaningWord({ wordIdx: block.wordIdx }));
+    }
+    userPane.innerHTML = '';
+    progressStrip.update({
+      surahName: 'Reviewing', ayah: verse.ayah,
+      wordIdx: 0, totalWords: 1, meaning: null
+    });
+  }
+
+  function exitReview() {
+    reviewMode = false; reviewVerse = null;
+    render();
+    updateProgress();
+  }
+
   function applyKeyResult(result) {
-    if (!matcher) return;
+    if (!matcher || reviewMode) return;
     render();
     updateProgress();
     if (result?.complete) finishVerse();
@@ -210,20 +306,44 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     noteWrongAttempt,
     hasInProgressInput,
     showRangeEnd,
-    // legacy alias kept for tests
+    showReview, exitReview,
+    isReviewing: () => reviewMode,
     refreshHeatmap: () => updateProgress(),
     getMatcher: () => matcher,
     getCurrentAyah: () => ayah,
     getCurrentSurah: () => surah,
-    // legacy alias kept for tests
+    // legacy aliases
     setVerses: (verses) => {
-      // best-effort backwards compat for older callers/tests
       if (!verses || verses.length === 0) {
         setVerse({ surah: 0, surahName: '', ayah: 0, rawText: '' });
       } else {
         setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: verses[0] });
       }
     },
-    advance: () => { /* iter-2 alias — no-op now; main owns advance */ }
+    advance: () => {}
   };
+}
+
+function renderCheatsheet(root) {
+  root.innerHTML = '';
+  const summary = document.createElement('div'); summary.className = 'cheatsheet__head';
+  summary.textContent = '📚 Quick reference — common particles, pronouns, patterns';
+  root.appendChild(summary);
+  const inner = document.createElement('div'); inner.className = 'cheatsheet__inner';
+  for (const section of CHEATSHEET) {
+    const sec = document.createElement('section'); sec.className = 'cheat-section';
+    const h = document.createElement('h5'); h.textContent = section.title; sec.appendChild(h);
+    const list = document.createElement('div'); list.className = 'cheat-list';
+    for (const item of section.items) {
+      const row = document.createElement('div'); row.className = 'cheat-row';
+      const ar = document.createElement('span'); ar.className = 'cheat-ar'; ar.textContent = item.ar;
+      const tl = document.createElement('span'); tl.className = 'cheat-tl'; tl.textContent = item.tl;
+      const m  = document.createElement('span'); m.className = 'cheat-m';   m.textContent = item.m;
+      row.append(ar, tl, m);
+      list.appendChild(row);
+    }
+    sec.appendChild(list);
+    inner.appendChild(sec);
+  }
+  root.appendChild(inner);
 }

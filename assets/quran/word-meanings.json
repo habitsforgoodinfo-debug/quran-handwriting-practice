@@ -1,69 +1,301 @@
 {
   "_meta": {
-    "description": "Word-by-word English glosses keyed by surah:ayah. Each value is an array, one entry per whitespace-split word in the verse. Fields: m=meaning, tl=transliteration, root=triliteral root, role='prep'|'art'|'conj' for function words shown in distinct colors.",
+    "description": "Word-by-word annotations keyed by surah:ayah. Each entry:\n  m   — short English gloss for the strip\n  tl  — Latin transliteration\n  root — triliteral root (Arabic letters separated by space)\n  role — function-word color: 'prep'|'art'|'conj' (omit for content words)\n  grm — short Quranic-grammar tag: PCL=particle, N=noun, V=verb, ADJ=adj, PRO=pronoun, IDF=idafa (possessive construct), DEF=definite. Use '+' to compose, e.g. PCL+N+DEF\n  parts — ordered breakdown of the English meaning. Each part:\n    t — English text\n    k — kind (prep|art|noun|verb|adj|pron|conj|particle)\n    root — optional root tag\n",
     "coverage": "Al-Fatiha (1:1–1:7) and Al-Ikhlas (112:1–112:4)"
   },
   "1:1": [
-    { "m": "in the name", "tl": "bi-smi", "root": "س م و", "role": "prep" },
-    { "m": "of Allah", "tl": "Allāh", "root": "أ ل ه" },
-    { "m": "the Most Merciful", "tl": "ar-Raḥmān", "root": "ر ح م", "role": "art" },
-    { "m": "the Especially Merciful", "tl": "ar-Raḥīm", "root": "ر ح م", "role": "art" }
+    {
+      "tl": "bi-smi", "root": "س م و", "grm": "PCL+N", "role": "prep",
+      "m": "in the name",
+      "parts": [
+        { "t": "in", "k": "prep" },
+        { "t": "the name", "k": "noun", "root": "س م و" }
+      ]
+    },
+    {
+      "tl": "Allāh", "root": "أ ل ه", "grm": "N",
+      "m": "of Allah",
+      "parts": [
+        { "t": "of", "k": "prep" },
+        { "t": "Allah", "k": "noun" }
+      ]
+    },
+    {
+      "tl": "ar-Raḥmān", "root": "ر ح م", "grm": "ADJ+DEF", "role": "art",
+      "m": "the Most Merciful",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "Most Merciful", "k": "adj", "root": "ر ح م" }
+      ]
+    },
+    {
+      "tl": "ar-Raḥīm", "root": "ر ح م", "grm": "ADJ+DEF", "role": "art",
+      "m": "the Especially Merciful",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "Especially Merciful", "k": "adj", "root": "ر ح م" }
+      ]
+    }
   ],
   "1:2": [
-    { "m": "All praise", "tl": "al-ḥamdu", "root": "ح م د", "role": "art" },
-    { "m": "is for Allah", "tl": "li-llāh", "root": "أ ل ه", "role": "prep" },
-    { "m": "Lord", "tl": "rabbi", "root": "ر ب ب" },
-    { "m": "of the worlds", "tl": "al-ʿālamīn", "root": "ع ل م", "role": "art" }
+    {
+      "tl": "al-ḥamdu", "root": "ح م د", "grm": "N+DEF", "role": "art",
+      "m": "all praise",
+      "parts": [
+        { "t": "all", "k": "art" },
+        { "t": "praise", "k": "noun", "root": "ح م د" }
+      ]
+    },
+    {
+      "tl": "li-llāh", "root": "أ ل ه", "grm": "PCL+N", "role": "prep",
+      "m": "is for Allah",
+      "parts": [
+        { "t": "for", "k": "prep" },
+        { "t": "Allah", "k": "noun" }
+      ]
+    },
+    {
+      "tl": "rabbi", "root": "ر ب ب", "grm": "N+IDF",
+      "m": "Lord of",
+      "parts": [
+        { "t": "Lord of", "k": "noun", "root": "ر ب ب" }
+      ]
+    },
+    {
+      "tl": "al-ʿālamīn", "root": "ع ل م", "grm": "N+DEF+PL", "role": "art",
+      "m": "the worlds",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "worlds", "k": "noun", "root": "ع ل م" }
+      ]
+    }
   ],
   "1:3": [
-    { "m": "the Most Merciful", "tl": "ar-Raḥmān", "root": "ر ح م", "role": "art" },
-    { "m": "the Especially Merciful", "tl": "ar-Raḥīm", "root": "ر ح م", "role": "art" }
+    {
+      "tl": "ar-Raḥmān", "root": "ر ح م", "grm": "ADJ+DEF", "role": "art",
+      "m": "the Most Merciful",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "Most Merciful", "k": "adj", "root": "ر ح م" }
+      ]
+    },
+    {
+      "tl": "ar-Raḥīm", "root": "ر ح م", "grm": "ADJ+DEF", "role": "art",
+      "m": "the Especially Merciful",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "Especially Merciful", "k": "adj", "root": "ر ح م" }
+      ]
+    }
   ],
   "1:4": [
-    { "m": "Master", "tl": "māliki", "root": "م ل ك" },
-    { "m": "of the Day", "tl": "yawmi", "root": "ي و م" },
-    { "m": "of Judgement", "tl": "ad-dīn", "root": "د ي ن", "role": "art" }
+    {
+      "tl": "māliki", "root": "م ل ك", "grm": "N+IDF",
+      "m": "Master of",
+      "parts": [{ "t": "Master of", "k": "noun", "root": "م ل ك" }]
+    },
+    {
+      "tl": "yawmi", "root": "ي و م", "grm": "N+IDF",
+      "m": "the Day of",
+      "parts": [
+        { "t": "the Day of", "k": "noun", "root": "ي و م" }
+      ]
+    },
+    {
+      "tl": "ad-dīn", "root": "د ي ن", "grm": "N+DEF", "role": "art",
+      "m": "Judgement",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "Judgement", "k": "noun", "root": "د ي ن" }
+      ]
+    }
   ],
   "1:5": [
-    { "m": "You alone", "tl": "iyyāka", "root": "—" },
-    { "m": "we worship", "tl": "naʿbudu", "root": "ع ب د" },
-    { "m": "and You alone", "tl": "wa-iyyāka", "root": "—", "role": "conj" },
-    { "m": "we ask for help", "tl": "nastaʿīn", "root": "ع و ن" }
+    {
+      "tl": "iyyāka", "grm": "PRO",
+      "m": "You alone",
+      "parts": [{ "t": "You alone", "k": "pron" }]
+    },
+    {
+      "tl": "naʿbudu", "root": "ع ب د", "grm": "V",
+      "m": "we worship",
+      "parts": [
+        { "t": "we", "k": "pron" },
+        { "t": "worship", "k": "verb", "root": "ع ب د" }
+      ]
+    },
+    {
+      "tl": "wa-iyyāka", "grm": "PCL+PRO", "role": "conj",
+      "m": "and You alone",
+      "parts": [
+        { "t": "and", "k": "conj" },
+        { "t": "You alone", "k": "pron" }
+      ]
+    },
+    {
+      "tl": "nastaʿīn", "root": "ع و ن", "grm": "V",
+      "m": "we ask for help",
+      "parts": [
+        { "t": "we", "k": "pron" },
+        { "t": "ask for help", "k": "verb", "root": "ع و ن" }
+      ]
+    }
   ],
   "1:6": [
-    { "m": "Guide us", "tl": "ihdinā", "root": "ه د ي" },
-    { "m": "to the path", "tl": "aṣ-ṣirāṭ", "root": "ص ر ط", "role": "art" },
-    { "m": "the straight", "tl": "al-mustaqīm", "root": "ق و م", "role": "art" }
+    {
+      "tl": "ihdinā", "root": "ه د ي", "grm": "V+PRO",
+      "m": "Guide us",
+      "parts": [
+        { "t": "Guide", "k": "verb", "root": "ه د ي" },
+        { "t": "us", "k": "pron" }
+      ]
+    },
+    {
+      "tl": "aṣ-ṣirāṭa", "root": "ص ر ط", "grm": "N+DEF", "role": "art",
+      "m": "the path",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "path", "k": "noun", "root": "ص ر ط" }
+      ]
+    },
+    {
+      "tl": "al-mustaqīm", "root": "ق و م", "grm": "ADJ+DEF", "role": "art",
+      "m": "the straight",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "straight one", "k": "adj", "root": "ق و م" }
+      ]
+    }
   ],
   "1:7": [
-    { "m": "the path", "tl": "ṣirāṭa", "root": "ص ر ط" },
-    { "m": "of those", "tl": "alladhīna", "root": "—" },
-    { "m": "You have favored", "tl": "anʿamta", "root": "ن ع م" },
-    { "m": "upon them", "tl": "ʿalayhim", "root": "—", "role": "prep" },
-    { "m": "not", "tl": "ghayri", "root": "غ ي ر", "role": "conj" },
-    { "m": "(those who) earned wrath", "tl": "al-maghḍūbi", "root": "غ ض ب" },
-    { "m": "upon them", "tl": "ʿalayhim", "root": "—", "role": "prep" },
-    { "m": "and not", "tl": "wa-lā", "root": "—", "role": "conj" },
-    { "m": "those who go astray", "tl": "aḍ-ḍāllīn", "root": "ض ل ل", "role": "art" }
+    {
+      "tl": "ṣirāṭa", "root": "ص ر ط", "grm": "N+IDF",
+      "m": "the path of",
+      "parts": [{ "t": "path of", "k": "noun", "root": "ص ر ط" }]
+    },
+    {
+      "tl": "alladhīna", "grm": "PRO",
+      "m": "those who",
+      "parts": [{ "t": "those who", "k": "pron" }]
+    },
+    {
+      "tl": "anʿamta", "root": "ن ع م", "grm": "V+PRO",
+      "m": "You bestowed favor",
+      "parts": [
+        { "t": "You", "k": "pron" },
+        { "t": "bestowed favor", "k": "verb", "root": "ن ع م" }
+      ]
+    },
+    {
+      "tl": "ʿalayhim", "grm": "PCL+PRO", "role": "prep",
+      "m": "upon them",
+      "parts": [
+        { "t": "upon", "k": "prep" },
+        { "t": "them", "k": "pron" }
+      ]
+    },
+    {
+      "tl": "ghayri", "root": "غ ي ر", "grm": "PCL", "role": "conj",
+      "m": "not",
+      "parts": [{ "t": "not of", "k": "conj" }]
+    },
+    {
+      "tl": "al-maghḍūbi", "root": "غ ض ب", "grm": "N+DEF",
+      "m": "those who earned wrath",
+      "parts": [
+        { "t": "those who earned", "k": "verb" },
+        { "t": "wrath", "k": "noun", "root": "غ ض ب" }
+      ]
+    },
+    {
+      "tl": "ʿalayhim", "grm": "PCL+PRO", "role": "prep",
+      "m": "upon them",
+      "parts": [
+        { "t": "upon", "k": "prep" },
+        { "t": "them", "k": "pron" }
+      ]
+    },
+    {
+      "tl": "wa-lā", "grm": "PCL", "role": "conj",
+      "m": "and not",
+      "parts": [
+        { "t": "and", "k": "conj" },
+        { "t": "not", "k": "conj" }
+      ]
+    },
+    {
+      "tl": "aḍ-ḍāllīn", "root": "ض ل ل", "grm": "N+DEF+PL", "role": "art",
+      "m": "those who go astray",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "ones astray", "k": "noun", "root": "ض ل ل" }
+      ]
+    }
   ],
   "112:1": [
-    { "m": "Say", "tl": "qul", "root": "ق و ل" },
-    { "m": "He is", "tl": "huwa", "root": "—", "role": "conj" },
-    { "m": "Allah", "tl": "Allāh", "root": "أ ل ه" },
-    { "m": "One", "tl": "aḥad", "root": "أ ح د" }
+    { "tl": "qul", "root": "ق و ل", "grm": "V", "m": "Say",
+      "parts": [{ "t": "Say", "k": "verb", "root": "ق و ل" }] },
+    { "tl": "huwa", "grm": "PRO", "role": "conj", "m": "He is",
+      "parts": [{ "t": "He is", "k": "pron" }] },
+    { "tl": "Allāh", "root": "أ ل ه", "grm": "N", "m": "Allah",
+      "parts": [{ "t": "Allah", "k": "noun" }] },
+    { "tl": "aḥad", "root": "أ ح د", "grm": "ADJ", "m": "One",
+      "parts": [{ "t": "One", "k": "adj", "root": "أ ح د" }] }
   ],
   "112:2": [
-    { "m": "Allah", "tl": "Allāh", "root": "أ ل ه" },
-    { "m": "the Eternal Refuge", "tl": "aṣ-ṣamad", "root": "ص م د", "role": "art" }
+    { "tl": "Allāh", "root": "أ ل ه", "grm": "N", "m": "Allah",
+      "parts": [{ "t": "Allah", "k": "noun" }] },
+    { "tl": "aṣ-ṣamad", "root": "ص م د", "grm": "N+DEF", "role": "art",
+      "m": "the Eternal",
+      "parts": [
+        { "t": "the", "k": "art" },
+        { "t": "Eternal Refuge", "k": "noun", "root": "ص م د" }
+      ]
+    }
   ],
   "112:3": [
-    { "m": "He did not beget", "tl": "lam yalid", "root": "و ل د", "role": "conj" },
-    { "m": "nor was He begotten", "tl": "wa-lam yūlad", "root": "و ل د", "role": "conj" }
+    {
+      "tl": "lam yalid", "root": "و ل د", "grm": "PCL+V", "role": "conj",
+      "m": "He did not beget",
+      "parts": [
+        { "t": "did not", "k": "conj" },
+        { "t": "beget", "k": "verb", "root": "و ل د" }
+      ]
+    },
+    {
+      "tl": "wa-lam yūlad", "root": "و ل د", "grm": "PCL+V", "role": "conj",
+      "m": "nor was begotten",
+      "parts": [
+        { "t": "nor was", "k": "conj" },
+        { "t": "begotten", "k": "verb", "root": "و ل د" }
+      ]
+    }
   ],
   "112:4": [
-    { "m": "And there is not", "tl": "wa-lam yakun", "root": "ك و ن", "role": "conj" },
-    { "m": "to Him", "tl": "lahu", "root": "—", "role": "prep" },
-    { "m": "equivalent", "tl": "kufuwan", "root": "ك ف أ" },
-    { "m": "anyone", "tl": "aḥad", "root": "أ ح د" }
+    {
+      "tl": "wa-lam yakun", "root": "ك و ن", "grm": "PCL+V", "role": "conj",
+      "m": "And there is not",
+      "parts": [
+        { "t": "and there is not", "k": "conj" }
+      ]
+    },
+    {
+      "tl": "lahu", "grm": "PCL+PRO", "role": "prep",
+      "m": "to Him",
+      "parts": [
+        { "t": "to", "k": "prep" },
+        { "t": "Him", "k": "pron" }
+      ]
+    },
+    {
+      "tl": "kufuwan", "root": "ك ف أ", "grm": "N",
+      "m": "equivalent",
+      "parts": [{ "t": "equivalent", "k": "noun", "root": "ك ف أ" }]
+    },
+    {
+      "tl": "aḥad", "root": "أ ح د", "grm": "PRO",
+      "m": "anyone",
+      "parts": [{ "t": "anyone", "k": "pron" }]
+    }
   ]
 }

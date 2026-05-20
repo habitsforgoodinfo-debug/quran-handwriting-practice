@@ -1,4 +1,4 @@
-const CACHE = 'qhp-v13';
+const CACHE = 'qhp-v14';
 // Big, rarely-changing static assets — safe to cache-first.
 const STATIC_ASSETS = [
   './assets/quran/quran-indopak.json',

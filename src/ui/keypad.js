@@ -75,9 +75,11 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
   function buildHarakatRow() {
     harakatRow.innerHTML = '';
     for (const h of harakatForScript(currentScript)) {
-      // Pass the canonical char to the handler (matcher accepts aliases).
+      // Pass the DISPLAYED char to the handler so the user-pane render
+      // shows the same glyph the user tapped (e.g. ۡ jazm in Indo-Pak).
+      // Matcher accepts either codepoint.
       harakatRow.appendChild(
-        mkKey('ـ' + h.displayChar, 'key--harakah', h.char, 'onHarakat')
+        mkKey('ـ' + h.displayChar, 'key--harakah', h.displayChar, 'onHarakat')
       );
     }
   }

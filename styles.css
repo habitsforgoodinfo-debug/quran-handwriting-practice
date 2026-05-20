@@ -26,27 +26,85 @@ html, body {
   direction: rtl; text-align: right;
   line-height: 2.2;
 }
-.canonical-pane {
-  font-size: 38px; padding: 6px 4px;
-  transition: background 250ms ease, transform 220ms ease, opacity 220ms ease;
+/* Top bar with prev-ayah arrow */
+.practice-topbar { display: flex; justify-content: flex-start; padding: 0 2px 4px; }
+.practice-prev {
+  background: #ffffff; color: #5b5346; border: 1px solid #d8cdb8;
+  border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer;
+}
+.practice-prev:hover { background: #f7efdc; }
+
+/* Stacked verse-meaning panes that scroll together */
+.verse-stack {
+  display: flex; flex-direction: column; gap: 4px;
+  max-height: 30vh; overflow-y: auto; overflow-x: hidden;
+  padding: 4px;
+  background: #fffaf2;
   border-radius: 8px;
-  display: flex; flex-wrap: wrap; gap: 14px 16px;
+}
+.canonical-pane {
+  font-size: 26px; padding: 2px 0;
+  transition: background 250ms ease, transform 220ms ease, opacity 220ms ease;
+  border-radius: 6px;
+  display: flex; flex-wrap: wrap; gap: 8px 14px;
   direction: rtl; justify-content: flex-start;
+  font-family: 'Amiri','NotoNaskhArabic',serif;
 }
-.canonical-word {
-  display: inline-flex; flex-direction: column; align-items: center;
-  line-height: 1.2;
-}
-.canonical-word__top { display: inline-block; }
-.canonical-word__meaning {
+.meaning-pane {
+  display: flex; flex-wrap: wrap; gap: 8px 14px;
+  direction: rtl; justify-content: flex-start;
   font-family: 'Nunito','Inter',system-ui,sans-serif;
-  font-size: 12px; color: #5b5346;
-  margin-top: 4px; direction: ltr;
-  max-width: 12em; text-align: center;
+  border-top: 1px dashed #d8cdb8; padding-top: 6px;
 }
-.canonical-word__meaning--prep { color: #1cb0f6; }
-.canonical-word__meaning--art  { color: #8a4fb8; }
-.canonical-word__meaning--conj { color: #8a6300; }
+.verse-word {
+  display: inline-flex; align-items: center; line-height: 1.2;
+}
+.meaning-word {
+  display: inline-flex; flex-direction: column; align-items: center;
+  min-width: 4em; max-width: 11em; direction: ltr; text-align: center;
+  gap: 2px;
+}
+.meaning-grm {
+  font-size: 10px; color: #ffffff; background: #1cb0f6;
+  border-radius: 3px; padding: 0 4px; letter-spacing: 0.4px;
+}
+.meaning-text { font-size: 16px; font-weight: 600; color: #1c1c1c; line-height: 1.2; }
+.meaning-text--prep { color: #1cb0f6; }
+.meaning-text--art  { color: #8a4fb8; }
+.meaning-text--conj { color: #8a6300; }
+.meaning-part--prep    { background: #e8f6fe; color: #1cb0f6; padding: 0 4px; border-radius: 3px; }
+.meaning-part--art     { background: #fbe8ff; color: #8a4fb8; padding: 0 4px; border-radius: 3px; }
+.meaning-part--conj    { background: #fef2c0; color: #8a6300; padding: 0 4px; border-radius: 3px; }
+.meaning-part--particle{ background: #fef2c0; color: #8a6300; padding: 0 4px; border-radius: 3px; }
+.meaning-part--noun, .meaning-part--adj { color: #1c1c1c; }
+.meaning-part--verb { color: #2c8a02; font-style: italic; }
+.meaning-part--pron { color: #b8860b; }
+.meaning-sub {
+  font-size: 11px; color: #5b5346;
+}
+.meaning-tl  { font-style: italic; }
+.meaning-root { color: #8a6300; }
+
+/* Cheatsheet */
+.cheatsheet {
+  margin-top: 6px;
+  background: #fffdf6; border: 1px solid #eee2cf; border-radius: 8px;
+  padding: 8px 10px; max-height: 24vh; overflow-y: auto;
+}
+.cheatsheet__head {
+  font-weight: 700; font-size: 13px; color: #5b3c00;
+  padding-bottom: 4px; border-bottom: 1px dashed #d8cdb8; margin-bottom: 6px;
+}
+.cheat-section { margin-bottom: 6px; }
+.cheat-section h5 {
+  margin: 4px 0; font-size: 12px; color: #2c8a02; text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cheat-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 2px 8px; }
+.cheat-row { display: grid; grid-template-columns: 5em 4em 1fr; gap: 6px; font-size: 12px; align-items: baseline; }
+.cheat-ar { font-family: 'Amiri','NotoNaskhArabic',serif; font-size: 16px; direction: rtl; text-align: right; }
+.cheat-tl { color: #5b5346; font-style: italic; }
+.cheat-m  { color: #1c1c1c; }
 .canonical-pane.canonical-pane--celebrate {
   background: rgba(88, 204, 2, 0.22);
   box-shadow: 0 0 0 2px #58cc02;

@@ -114,7 +114,7 @@ test('keypad: harakat row has exactly 10 keys', () => {
   assert.equal(root.querySelectorAll('.key--harakah').length, 10);
 });
 
-test('keypad: indopak script displays jazm sukun (ۡ) but still fires canonical ْ', () => {
+test('keypad: indopak script fires jazm ۡ (matcher accepts either)', () => {
   const doc = makeDocument();
   globalThis.document = doc;
   const root = doc.createElement('div');
@@ -123,8 +123,7 @@ test('keypad: indopak script displays jazm sukun (ۡ) but still fires canonical 
   const k = root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ۡ'));
   assert.ok(k, 'jazm key (ۡ) should display in indopak mode');
   k.dispatch('click');
-  // Handler still receives the canonical ْ so the matcher accepts either form.
-  assert.deepEqual(calls.harakat, ['ْ']);
+  assert.deepEqual(calls.harakat, ['ۡ']);
 });
 
 test('keypad: setScript swaps the sukun glyph live', () => {
