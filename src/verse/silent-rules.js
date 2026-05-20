@@ -9,10 +9,17 @@ const LAM = 'ل';
 export function isSilentInWord(glyphs, index) {
   const g = glyphs[index];
   if (!g) return false;
-  // The madd alif (alif elongating a preceding fatha, e.g. قَالَ) is NOT
-  // silent — the user must type it. Its skeleton slot stays `sound` with
-  // hasNone=true and seals on the letter alone.
-  if (g.isMaddAlif) return false;
+  // Madd alif (alif elongating a preceding fatha) is normally TYPED by the
+  // user. Exception: if the letter immediately following the alif carries a
+  // sukun or a shadda, the alif is not elongated in recitation and the user
+  // should NOT have to type it.
+  if (g.isMaddAlif) {
+    const next = glyphs[index + 1];
+    if (next && (next.diacritics.includes('sukun') || next.diacritics.includes('shadda'))) {
+      return true;
+    }
+    return false;
+  }
   if (g.isSilent) return true;
 
   if (index === 1

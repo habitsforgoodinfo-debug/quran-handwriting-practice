@@ -2,7 +2,6 @@ import { buildSkeleton } from '../verse/skeleton.js';
 import { LiveMatcher } from '../compare/live-matcher.js';
 import { mountHeatmapStrip } from './heatmap-strip.js';
 import { _diacriticCharByName as CHAR_BY_NAME } from '../verse/parser.js';
-import { CHEATSHEET } from '../data/cheatsheet.js';
 
 export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
   root.innerHTML = '';
@@ -27,13 +26,10 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
 
   const userPane      = document.createElement('div'); userPane.className = 'user-pane';
   const progressRoot  = document.createElement('div');
-  const cheatPane     = document.createElement('div'); cheatPane.className = 'cheatsheet';
   const banner        = document.createElement('div'); banner.className = 'range-complete-banner';
   banner.style.display = 'none';
 
-  root.append(topBar, verseStack, userPane, progressRoot, cheatPane, banner);
-
-  renderCheatsheet(cheatPane);
+  root.append(topBar, verseStack, userPane, progressRoot, banner);
 
   const progressStrip = mountHeatmapStrip(progressRoot);
 
@@ -322,28 +318,4 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
     },
     advance: () => {}
   };
-}
-
-function renderCheatsheet(root) {
-  root.innerHTML = '';
-  const summary = document.createElement('div'); summary.className = 'cheatsheet__head';
-  summary.textContent = '📚 Quick reference — common particles, pronouns, patterns';
-  root.appendChild(summary);
-  const inner = document.createElement('div'); inner.className = 'cheatsheet__inner';
-  for (const section of CHEATSHEET) {
-    const sec = document.createElement('section'); sec.className = 'cheat-section';
-    const h = document.createElement('h5'); h.textContent = section.title; sec.appendChild(h);
-    const list = document.createElement('div'); list.className = 'cheat-list';
-    for (const item of section.items) {
-      const row = document.createElement('div'); row.className = 'cheat-row';
-      const ar = document.createElement('span'); ar.className = 'cheat-ar'; ar.textContent = item.ar;
-      const tl = document.createElement('span'); tl.className = 'cheat-tl'; tl.textContent = item.tl;
-      const m  = document.createElement('span'); m.className = 'cheat-m';   m.textContent = item.m;
-      row.append(ar, tl, m);
-      list.appendChild(row);
-    }
-    sec.appendChild(list);
-    inner.appendChild(sec);
-  }
-  root.appendChild(inner);
 }

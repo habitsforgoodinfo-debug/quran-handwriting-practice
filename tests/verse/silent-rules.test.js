@@ -67,3 +67,21 @@ test('firstSoundOverride: only fires at index 0', () => {
   const glyphs = parseWord('ٱلْحَمْدُ');
   assert.equal(firstSoundOverride(glyphs, 1, true), null);
 });
+
+test('silent-rules: madd alif followed by letter with sukun → silent', () => {
+  // قَالْ-style — alif then ل with sukun. Alif elongation is dropped.
+  const glyphs = parseWord('قَالْ');
+  assert.equal(isSilentInWord(glyphs, 1), true);
+});
+
+test('silent-rules: madd alif followed by letter with shadda → silent', () => {
+  // ضَآلِّ — alif then لّ (shadda). Alif drops out of pronunciation.
+  // Constructing a minimal example: حَاطَّ-like
+  const glyphs = parseWord('ضَالَّ');
+  assert.equal(isSilentInWord(glyphs, 1), true);
+});
+
+test('silent-rules: madd alif followed by plain letter → sound (user types)', () => {
+  const glyphs = parseWord('قَالَ');
+  assert.equal(isSilentInWord(glyphs, 1), false);
+});

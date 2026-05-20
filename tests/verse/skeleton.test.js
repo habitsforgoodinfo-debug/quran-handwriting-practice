@@ -100,3 +100,13 @@ test('skeleton: pause marks (e.g. ۙ) go into ornaments not required', () => {
   assert.ok(new Set(lam.expectedHarakat.required).has('sukun'));
   assert.ok((lam.expectedHarakat.ornaments || []).includes('high_lam'));
 });
+
+test('skeleton: verse-start letter with shadda — shadda dropped from required', () => {
+  // إِنَّا at verse start. The first sound is the alif-with-kasra (no
+  // shadda). To exercise the rule, use a verse that genuinely begins with
+  // a shadda'd letter: يَّ as a contrived first word.
+  const slots = buildSkeleton('يَّوْمَ', { isVerseStart: true });
+  const firstSound = slots.find(s => s.kind === 'sound');
+  assert.ok(firstSound);
+  assert.ok(!firstSound.expectedHarakat.required.includes('shadda'));
+});

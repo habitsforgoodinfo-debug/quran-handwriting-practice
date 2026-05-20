@@ -6,7 +6,7 @@ import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
 import { mountMyBook } from './ui/my-book.js';
-import { startRapidFire } from './ui/rapid-fire.js';
+import { pickRapidFireChallenge } from './ui/rapid-fire.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
   recordError, recordAttempt, getAccuracy, getCoverage,
@@ -257,23 +257,20 @@ function openSettings() {
 }
 
 async function openRapidFire() {
-  const verseEl  = document.getElementById('verse-display');
-  const keypadEl = document.getElementById('keypad-view');
-  await startRapidFire({
-    verseEl, keypadEl, keypadApi,
-    reciter: state.settings.reciter,
-    onExit: () => {
-      // Restore normal handlers and re-render current verse.
-      keypadApi.setHandlers({
-        onLetter:    handleLetter,
-        onHarakat:   handleHarakat,
-        onBackspace: handleBackspace,
-        onPlayAudio: playCurrentAyah,
-        onNextAyah:  handleNextAyah
-      });
-      loadCurrentVerse();
-    }
-  });
+  const challenge = await pickRapidFireChallenge();
+  if (!challenge) {
+    showRetryToast('No rapid-fire challenges yet — write some verses first.', () => {});
+    return;
+  }
+  // Jump to the challenge verse using the normal canvas, then play its audio
+  // once so the user hears what they have to write.
+  const meta = getSurah(challenge.surah);
+  state.surah = challenge.surah;
+  state.ayah  = challenge.ayah;
+  state.surahMax  = meta?.verses || 1;
+  state.surahName = meta?.name_en || `Surah ${challenge.surah}`;
+  loadCurrentVerse({ slide: true });
+  setTimeout(() => playAyah(challenge.surah, challenge.ayah), 350);
 }
 
 function playCurrentAyah() {

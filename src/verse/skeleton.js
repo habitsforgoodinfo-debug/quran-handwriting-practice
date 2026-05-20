@@ -94,5 +94,20 @@ export function buildSkeleton(rawVerse, { isVerseStart = false } = {}) {
     }
   }
 
+  // If the very first sound slot of the verse carries a shadda, drop it
+  // from the required marks — at the start of an utterance you can't
+  // pronounce a doubled consonant from silence, so the shadda is
+  // effectively ignored in recitation.
+  if (isVerseStart) {
+    const firstSound = slots.find(s => s.kind === 'sound');
+    if (firstSound && firstSound.expectedHarakat.required?.includes('shadda')) {
+      firstSound.expectedHarakat.required =
+        firstSound.expectedHarakat.required.filter(d => d !== 'shadda');
+      if (firstSound.expectedHarakat.required.length === 0) {
+        firstSound.expectedHarakat.hasNone = true;
+      }
+    }
+  }
+
   return slots;
 }
