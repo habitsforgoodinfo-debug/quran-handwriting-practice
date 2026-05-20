@@ -5,6 +5,7 @@ import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
 import { mountMyBook } from './ui/my-book.js';
+import { mountIntro } from './ui/intro.js';
 import { pickRapidFireChallenge } from './ui/rapid-fire.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
@@ -56,6 +57,12 @@ async function init() {
   });
 
   refreshHeaderStats();
+
+  if (!state.settings.hideIntro) {
+    mountIntro(document.body, {
+      onHide: async () => { state.settings = await updateSettings({ hideIntro: true }); }
+    });
+  }
 }
 
 async function refreshHeaderStats() {

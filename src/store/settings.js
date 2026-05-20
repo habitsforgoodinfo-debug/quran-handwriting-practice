@@ -8,7 +8,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   strokeWidth: 4,
   script: 'indopak',
   hintPolicy: 'auto',
-  strict: false
+  strict: false,
+  hideIntro: false
 });
 
 function migrate(stored) {
