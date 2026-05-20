@@ -85,3 +85,12 @@ test('silent-rules: madd alif followed by plain letter → sound (user types)', 
   const glyphs = parseWord('قَالَ');
   assert.equal(isSilentInWord(glyphs, 1), false);
 });
+
+test('silent-rules: madd alif then silent ل then shadda → silent (Ar-Rahman v5 case)', () => {
+  // وَالشَّمْسِ: و-fatha, ا (madd-alif candidate), ل (silent sun-letter),
+  // شّ (shadda+fatha). The alif's elongation drops out because of the
+  // shadda two glyphs later.
+  const glyphs = parseWord('وَالشَّمْسِ');
+  // alif index = 1
+  assert.equal(isSilentInWord(glyphs, 1), true);
+});

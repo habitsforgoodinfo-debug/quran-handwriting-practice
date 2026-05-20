@@ -2,6 +2,7 @@ import { SURAHS, getSurah } from '../data/surah-metadata.js';
 
 export function mountHeader(root, {
   onChange, onOpenSettings, onScriptToggle, onOpenBook, onOpenRapidFire,
+  onPrevAyah,
   initial
 }) {
   root.innerHTML = '';
@@ -44,6 +45,11 @@ export function mountHeader(root, {
   settingsBtn.className = 'settings'; settingsBtn.textContent = '⚙'; settingsBtn.title = 'Settings';
   settingsBtn.addEventListener('click', () => onOpenSettings());
 
+  const prevBtn = document.createElement('button');
+  prevBtn.className = 'prev-ayah'; prevBtn.textContent = '←';
+  prevBtn.title = 'Review previous ayah';
+  prevBtn.addEventListener('click', () => onPrevAyah && onPrevAyah());
+
   const statsEl = document.createElement('div');
   statsEl.className = 'header-stats';
   statsEl.textContent = '';
@@ -52,6 +58,7 @@ export function mountHeader(root, {
     surahSel,
     document.createTextNode(' Ayah '),
     ayahInput,
+    prevBtn,
     scriptBtn,
     bookBtn, rapidBtn, settingsBtn,
     statsEl

@@ -21,93 +21,56 @@ html, body {
 .header-stats { flex-basis: 100%; font-size: 12px; color: #5b5346; padding-top: 2px; }
 
 .practice-view { display: flex; flex-direction: column; gap: 8px; }
-.canonical-pane, .user-pane {
-  font-family: 'Amiri', 'NotoNaskhArabic', serif;
-  direction: rtl; text-align: right;
-  line-height: 2.2;
-}
-/* Top bar with prev-ayah arrow */
-.practice-topbar { display: flex; justify-content: flex-start; padding: 0 2px 4px; }
-.practice-prev {
-  background: #ffffff; color: #5b5346; border: 1px solid #d8cdb8;
-  border-radius: 6px; padding: 4px 10px; font-size: 13px; cursor: pointer;
-}
-.practice-prev:hover { background: #f7efdc; }
 
-/* Stacked verse-meaning panes that scroll together */
-.verse-stack {
-  display: flex; flex-direction: column; gap: 4px;
-  max-height: 30vh; overflow-y: auto; overflow-x: hidden;
-  padding: 4px;
+/* Header prev-ayah arrow */
+#header button.prev-ayah {
+  background: #ffffff; color: #5b5346; border: 1px solid #d8cdb8;
+  border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer;
+}
+
+/* Upper section — transliteration only. Capped at 2 lines, scrolls. */
+.translit-pane {
+  font-family: 'Nunito','Inter',system-ui,sans-serif;
+  font-size: 18px; line-height: 1.55;
+  display: flex; flex-wrap: wrap; gap: 6px 10px;
+  padding: 8px 6px;
   background: #fffaf2;
   border-radius: 8px;
-}
-.canonical-pane {
-  font-size: 26px; padding: 2px 0;
+  max-height: calc(2 * 1.55em + 18px);
+  overflow-y: auto;
   transition: background 250ms ease, transform 220ms ease, opacity 220ms ease;
-  border-radius: 6px;
-  display: flex; flex-wrap: wrap; gap: 8px 14px;
-  direction: rtl; justify-content: flex-start;
-  font-family: 'Amiri','NotoNaskhArabic',serif;
 }
-.meaning-pane {
-  display: flex; flex-wrap: wrap; gap: 8px 14px;
-  direction: rtl; justify-content: flex-start;
-  font-family: 'Nunito','Inter',system-ui,sans-serif;
-  border-top: 1px dashed #d8cdb8; padding-top: 6px;
-}
-.verse-word {
-  display: inline-flex; align-items: center; line-height: 1.2;
-}
-.meaning-word {
-  display: inline-flex; flex-direction: column; align-items: center;
-  min-width: 4em; max-width: 11em; direction: ltr; text-align: center;
-  gap: 2px;
-}
-.meaning-grm {
-  font-size: 10px; color: #ffffff; background: #1cb0f6;
-  border-radius: 3px; padding: 0 4px; letter-spacing: 0.4px;
-}
-.meaning-text { font-size: 16px; font-weight: 600; color: #1c1c1c; line-height: 1.2; }
-.meaning-text--prep { color: #1cb0f6; }
-.meaning-text--art  { color: #8a4fb8; }
-.meaning-text--conj { color: #8a6300; }
-.meaning-part--prep    { background: #e8f6fe; color: #1cb0f6; padding: 0 4px; border-radius: 3px; }
-.meaning-part--art     { background: #fbe8ff; color: #8a4fb8; padding: 0 4px; border-radius: 3px; }
-.meaning-part--conj    { background: #fef2c0; color: #8a6300; padding: 0 4px; border-radius: 3px; }
-.meaning-part--particle{ background: #fef2c0; color: #8a6300; padding: 0 4px; border-radius: 3px; }
-.meaning-part--noun, .meaning-part--adj { color: #1c1c1c; }
-.meaning-part--verb { color: #2c8a02; font-style: italic; }
-.meaning-part--pron { color: #b8860b; }
-.meaning-sub {
-  font-size: 11px; color: #5b5346;
-}
-.meaning-tl  { font-style: italic; }
-.meaning-root { color: #8a6300; }
-
-.canonical-pane.canonical-pane--celebrate {
+.translit-pane.translit-pane--celebrate {
   background: rgba(88, 204, 2, 0.22);
   box-shadow: 0 0 0 2px #58cc02;
 }
-.canonical-pane.canonical-pane--sliding {
-  transform: translateX(-30px); opacity: 0;
+.translit-pane.translit-pane--sliding { transform: translateX(-30px); opacity: 0; }
+.translit-word {
+  font-style: italic;
+  padding: 0 4px; border-radius: 4px;
+  white-space: nowrap;
 }
-.user-pane.user-pane--sliding {
-  transform: translateX(-30px); opacity: 0;
+.translit-word--sealed  { color: #58cc02; font-weight: 600; }
+.translit-word--current {
+  color: #1c1c1c; background: rgba(88, 204, 2, 0.18);
+  font-weight: 700; font-style: normal;
 }
-.user-pane      { font-size: 32px; padding: 6px 4px; min-height: 2.2em; transition: transform 220ms ease, opacity 220ms ease; }
-.pane-divider   { border-top: 1px dashed #d8cdb8; margin: 4px 0; }
+.translit-word--future  { color: #9aa0a6; }
 
-.canonical-slot                  { color: #1c1c1c; }
-.canonical-slot--future          { color: #9aa0a6; }
-.canonical-slot--silent          { color: #9aa0a6; font-style: italic; }
-.canonical-slot--sealed          { color: #58cc02; }
-.canonical-slot--current         {
-  color: #1c1c1c;
-  background: rgba(88, 204, 2, 0.18);
-  border-radius: 4px;
-  box-shadow: 0 0 0 2px #58cc02 inset;
+/* Middle section — Arabic the user is typing. Capped at 2 lines, scrolls. */
+.user-pane {
+  font-family: 'Amiri','NotoNaskhArabic',serif;
+  direction: rtl; text-align: right;
+  font-size: 30px; line-height: 1.8;
+  padding: 8px 6px;
+  min-height: calc(2 * 1.8em + 18px);
+  max-height: calc(2 * 1.8em + 18px);
+  overflow-y: auto;
+  background: #ffffff;
+  border-radius: 8px; border: 1px solid #eee2cf;
+  transition: transform 220ms ease, opacity 220ms ease;
 }
+.user-pane.user-pane--sliding { transform: translateX(-30px); opacity: 0; }
 .user-glyph.silent { color: #9aa0a6; opacity: 0.7; }
 
 .range-complete-banner {

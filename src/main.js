@@ -1,6 +1,5 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
 import { getSurah } from './data/surah-metadata.js';
-import { loadWordMeanings, getWordMeaning } from './data/word-meanings.js';
 import { mountHeader } from './ui/header.js';
 import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
@@ -28,20 +27,15 @@ async function init() {
     navigator.serviceWorker.register('./service-worker.js').catch(() => {});
   }
   state.settings = await getSettings();
-  await Promise.all([
-    loadQuran(state.settings.script),
-    loadWordMeanings()
-  ]);
+  await loadQuran(state.settings.script);
 
   const headerEl   = document.getElementById('header');
   const practiceEl = document.getElementById('verse-display');
   const keypadEl   = document.getElementById('keypad-view');
 
   practiceApi = mountPracticeView(practiceEl, {
-    onVerseComplete: handleVerseComplete,
-    onPrevAyah:      handlePrevAyah
+    onVerseComplete: handleVerseComplete
   });
-  practiceApi.setMeaningLookup(getWordMeaning);
 
   keypadApi = mountKeypad(keypadEl, {
     onLetter:    handleLetter,
@@ -57,7 +51,8 @@ async function init() {
     onOpenSettings: openSettings,
     onScriptToggle: handleScriptToggle,
     onOpenBook: () => mountMyBook(document.body),
-    onOpenRapidFire: openRapidFire
+    onOpenRapidFire: openRapidFire,
+    onPrevAyah: handlePrevAyah
   });
 
   refreshHeaderStats();

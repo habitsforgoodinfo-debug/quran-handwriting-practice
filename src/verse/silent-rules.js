@@ -14,8 +14,14 @@ export function isSilentInWord(glyphs, index) {
   // sukun or a shadda, the alif is not elongated in recitation and the user
   // should NOT have to type it.
   if (g.isMaddAlif) {
-    const next = glyphs[index + 1];
-    if (next && (next.diacritics.includes('sukun') || next.diacritics.includes('shadda'))) {
+    // Walk forward past any silent letters (definite-article lam, etc.)
+    // to find the first sounded follow-up. If THAT letter carries a sukun
+    // or shadda, the alif's elongation is dropped in recitation, so the
+    // user shouldn't have to type it.
+    let j = index + 1;
+    while (j < glyphs.length && glyphs[j].isSilent) j++;
+    const target = glyphs[j];
+    if (target && (target.diacritics.includes('sukun') || target.diacritics.includes('shadda'))) {
       return true;
     }
     return false;

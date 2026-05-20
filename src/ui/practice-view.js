@@ -1,35 +1,27 @@
 import { buildSkeleton } from '../verse/skeleton.js';
 import { LiveMatcher } from '../compare/live-matcher.js';
 import { mountHeatmapStrip } from './heatmap-strip.js';
-import { _diacriticCharByName as CHAR_BY_NAME } from '../verse/parser.js';
+import { _diacriticCharByName as CHAR_BY_NAME, parseVerse } from '../verse/parser.js';
+import { transliterateWord } from '../verse/transliterate.js';
 
-export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
+export function mountPracticeView(root, { onVerseComplete } = {}) {
   root.innerHTML = '';
   root.className = (root.className || '') + ' practice-view';
 
-  // Top bar: prev-ayah arrow + position label.
-  const topBar = document.createElement('div'); topBar.className = 'practice-topbar';
-  const prevBtn = document.createElement('button');
-  prevBtn.className = 'practice-prev'; prevBtn.textContent = '← previous ayah';
-  prevBtn.title = 'Review the previous ayah you wrote';
-  prevBtn.addEventListener('click', () => onPrevAyah && onPrevAyah());
-  topBar.appendChild(prevBtn);
+  // Upper section: transliteration of every word in the verse.
+  const translitPane = document.createElement('div');
+  translitPane.className = 'translit-pane';
 
-  // Stacked panes:
-  //   .verse-stack   — Arabic on top, English meanings below, scroll in sync
-  //   .user-pane     — what the user has typed so far (souvenir line)
-  //   .cheatsheet    — short grammar / vocab notes, scrollable
-  const verseStack    = document.createElement('div'); verseStack.className = 'verse-stack';
-  const canonicalPane = document.createElement('div'); canonicalPane.className = 'canonical-pane';
-  const meaningPane   = document.createElement('div'); meaningPane.className = 'meaning-pane';
-  verseStack.append(canonicalPane, meaningPane);
+  // Middle section: what the user has typed so far (Arabic).
+  const userPane = document.createElement('div');
+  userPane.className = 'user-pane';
 
-  const userPane      = document.createElement('div'); userPane.className = 'user-pane';
-  const progressRoot  = document.createElement('div');
-  const banner        = document.createElement('div'); banner.className = 'range-complete-banner';
+  // Progress + range-complete banner
+  const progressRoot = document.createElement('div');
+  const banner       = document.createElement('div'); banner.className = 'range-complete-banner';
   banner.style.display = 'none';
 
-  root.append(topBar, verseStack, userPane, progressRoot, banner);
+  root.append(translitPane, userPane, progressRoot, banner);
 
   const progressStrip = mountHeatmapStrip(progressRoot);
 
@@ -37,20 +29,20 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
   let surahName = '';
   let ayah = 0;
   let rawText = '';
+  let words = [];      // parsed glyphs per word, for transliteration
+  let translits = [];  // string per word
   let skeleton = [];
   let matcher = null;
   let versePerfect = true;
-  let meaningLookup = null;
   let reviewMode = false;
-  let reviewVerse = null;
-
-  function setMeaningLookup(fn) { meaningLookup = fn; }
 
   function loadCurrentVerse() {
+    words = parseVerse(rawText);
+    translits = words.map(transliterateWord);
     skeleton = buildSkeleton(rawText, { isVerseStart: true });
     matcher = new LiveMatcher(skeleton);
     versePerfect = true;
-    reviewMode = false; reviewVerse = null;
+    reviewMode = false;
     render();
     updateProgress();
   }
@@ -60,18 +52,18 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
     banner.style.display = 'none';
     banner.innerHTML = '';
     if (!rawText) {
-      canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
+      translitPane.innerHTML = '';
       userPane.innerHTML = '';
-      matcher = null; skeleton = [];
+      matcher = null; skeleton = []; words = []; translits = [];
       progressStrip.update(null);
       return;
     }
     if (slide) {
-      canonicalPane.classList.add('canonical-pane--sliding');
+      translitPane.classList.add('translit-pane--sliding');
       userPane.classList.add('user-pane--sliding');
       setTimeout(() => {
         loadCurrentVerse();
-        canonicalPane.classList.remove('canonical-pane--sliding');
+        translitPane.classList.remove('translit-pane--sliding');
         userPane.classList.remove('user-pane--sliding');
       }, 220);
     } else {
@@ -81,12 +73,11 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
 
   function showRangeEnd(buttons = []) {
     matcher = null;
-    canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
+    translitPane.innerHTML = '';
     userPane.innerHTML = '';
     progressStrip.update(null);
     banner.innerHTML = '';
-    const msg = document.createElement('div');
-    msg.className = 'banner-msg';
+    const msg = document.createElement('div'); msg.className = 'banner-msg';
     msg.textContent = '✓ surah complete — beautiful work';
     banner.appendChild(msg);
     const row = document.createElement('div'); row.className = 'banner-actions';
@@ -106,123 +97,36 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
     const idx = Math.min(matcher.state.slotIdx, skeleton.length - 1);
     return skeleton[idx]?.wordIdx ?? 0;
   }
-  function getTotalWords() {
-    if (!skeleton.length) return 0;
-    return Math.max(0, ...skeleton.map(s => (s.wordIdx ?? -1) + 1));
-  }
+  function getTotalWords() { return translits.length; }
 
   function updateProgress() {
     if (!surahName) { progressStrip.update(null); return; }
-    const wi = getCurrentWordIdx();
-    let meaning = null;
-    if (meaningLookup) meaning = meaningLookup(surah, ayah, wi);
     progressStrip.update({
       surahName, ayah,
-      wordIdx: wi,
+      wordIdx: getCurrentWordIdx(),
       totalWords: getTotalWords(),
-      meaning
+      meaning: null
     });
-  }
-
-  function buildWordBlocks() {
-    const blocks = [];
-    let current = null;
-    for (let i = 0; i < skeleton.length; i++) {
-      const slot = skeleton[i];
-      if (slot.kind === 'wordEnd') { current = null; continue; }
-      if (!current || current.wordIdx !== slot.wordIdx) {
-        current = { wordIdx: slot.wordIdx, slots: [] };
-        blocks.push(current);
-      }
-      current.slots.push({ slot, idx: i });
-    }
-    return blocks;
-  }
-
-  function renderArabicWord(block, sealedUpTo, currentSlotIdx) {
-    const wordEl = document.createElement('span');
-    wordEl.className = 'verse-word';
-    for (const { slot, idx } of block.slots) {
-      const span = document.createElement('span');
-      const ornamentChars = (slot.expectedHarakat?.ornaments || [])
-        .map(n => CHAR_BY_NAME[n]).filter(Boolean).join('');
-      span.textContent = slot.letter + ornamentChars;
-      const classes = ['canonical-slot'];
-      if (slot.kind === 'silent') classes.push('canonical-slot--silent');
-      if (idx <= sealedUpTo) classes.push('canonical-slot--sealed');
-      else if (idx === currentSlotIdx && slot.kind === 'sound') classes.push('canonical-slot--current');
-      else classes.push('canonical-slot--future');
-      span.className = classes.join(' ');
-      wordEl.appendChild(span);
-    }
-    return wordEl;
-  }
-
-  function renderMeaningWord(block) {
-    const meaning = meaningLookup ? meaningLookup(surah, ayah, block.wordIdx) : null;
-    const cell = document.createElement('span');
-    cell.className = 'meaning-word';
-    if (!meaning) {
-      cell.appendChild(document.createElement('span')); // spacer
-      return cell;
-    }
-
-    // Grammar tag chip
-    if (meaning.grm) {
-      const grm = document.createElement('span');
-      grm.className = 'meaning-grm';
-      grm.textContent = meaning.grm;
-      cell.appendChild(grm);
-    }
-
-    // English meaning with role-coloring
-    const text = document.createElement('span');
-    text.className = 'meaning-text';
-    if (meaning.role) text.classList.add('meaning-text--' + meaning.role);
-    if (Array.isArray(meaning.parts) && meaning.parts.length) {
-      for (let i = 0; i < meaning.parts.length; i++) {
-        const p = meaning.parts[i];
-        const seg = document.createElement('span');
-        seg.className = 'meaning-part meaning-part--' + (p.k || 'noun');
-        seg.textContent = p.t;
-        if (p.root) seg.setAttribute('title', 'root ' + p.root);
-        if (i > 0) text.appendChild(document.createTextNode(' '));
-        text.appendChild(seg);
-      }
-    } else {
-      text.textContent = meaning.m || '';
-    }
-    cell.appendChild(text);
-
-    // Root + transliteration below
-    const sub = document.createElement('span');
-    sub.className = 'meaning-sub';
-    const tl = document.createElement('span');
-    tl.className = 'meaning-tl'; tl.textContent = meaning.tl || '';
-    sub.appendChild(tl);
-    if (meaning.root && meaning.root !== '—') {
-      const r = document.createElement('span');
-      r.className = 'meaning-root';
-      r.textContent = ' · ' + meaning.root;
-      sub.appendChild(r);
-    }
-    cell.appendChild(sub);
-    return cell;
   }
 
   function render() {
     if (!matcher) return;
-    canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
+    const currentWord = getCurrentWordIdx();
 
-    const sealedUpTo = matcher.state.awaiting === 'harakat'
-      ? matcher.state.slotIdx
-      : matcher.state.slotIdx - 1;
-    const blocks = buildWordBlocks();
-    for (const block of blocks) {
-      canonicalPane.appendChild(renderArabicWord(block, sealedUpTo, matcher.state.slotIdx));
-      meaningPane.appendChild(renderMeaningWord(block));
+    // Transliteration pane: one chip per word, current word highlighted,
+    // sealed words greened, future words muted.
+    translitPane.innerHTML = '';
+    for (let wi = 0; wi < translits.length; wi++) {
+      const span = document.createElement('span');
+      span.className = 'translit-word';
+      if (wi < currentWord)      span.classList.add('translit-word--sealed');
+      else if (wi === currentWord) span.classList.add('translit-word--current');
+      else                         span.classList.add('translit-word--future');
+      span.textContent = translits[wi];
+      translitPane.appendChild(span);
     }
 
+    // User pane: Arabic letters as the user has typed.
     userPane.innerHTML = '';
     for (const t of matcher.state.typed) {
       if (t.kind === 'wordEnd') { userPane.appendChild(document.createTextNode(' ')); continue; }
@@ -233,37 +137,6 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
     }
   }
 
-  // Render a previous verse in read-only mode (no matcher state).
-  function showReview(verse) {
-    reviewMode = true; reviewVerse = verse;
-    const sk = buildSkeleton(verse.rawText, { isVerseStart: true });
-    canonicalPane.innerHTML = ''; meaningPane.innerHTML = '';
-    const blocks = [];
-    let cur = null;
-    for (let i = 0; i < sk.length; i++) {
-      const slot = sk[i];
-      if (slot.kind === 'wordEnd') { cur = null; continue; }
-      if (!cur || cur.wordIdx !== slot.wordIdx) { cur = { wordIdx: slot.wordIdx, slots: [] }; blocks.push(cur); }
-      cur.slots.push({ slot, idx: i });
-    }
-    for (const block of blocks) {
-      // All sealed for the review look.
-      canonicalPane.appendChild(renderArabicWord(block, sk.length, -1));
-      meaningPane.appendChild(renderMeaningWord({ wordIdx: block.wordIdx }));
-    }
-    userPane.innerHTML = '';
-    progressStrip.update({
-      surahName: 'Reviewing', ayah: verse.ayah,
-      wordIdx: 0, totalWords: 1, meaning: null
-    });
-  }
-
-  function exitReview() {
-    reviewMode = false; reviewVerse = null;
-    render();
-    updateProgress();
-  }
-
   function applyKeyResult(result) {
     if (!matcher || reviewMode) return;
     render();
@@ -272,8 +145,8 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
   }
 
   function finishVerse() {
-    canonicalPane.classList.add('canonical-pane--celebrate');
-    setTimeout(() => canonicalPane.classList.remove('canonical-pane--celebrate'), 700);
+    translitPane.classList.add('translit-pane--celebrate');
+    setTimeout(() => translitPane.classList.remove('translit-pane--celebrate'), 700);
     const completedSurah = surah, completedAyah = ayah, completedRaw = rawText;
     const wasPerfect = versePerfect;
     setTimeout(() => {
@@ -288,16 +161,40 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
     }, 600);
   }
 
+  function showReview(verse) {
+    reviewMode = true;
+    const tl = parseVerse(verse.rawText).map(transliterateWord);
+    translitPane.innerHTML = '';
+    for (const t of tl) {
+      const sp = document.createElement('span');
+      sp.className = 'translit-word translit-word--sealed';
+      sp.textContent = t;
+      translitPane.appendChild(sp);
+    }
+    userPane.innerHTML = '';
+    const arabic = document.createElement('span');
+    arabic.className = 'user-glyph';
+    arabic.textContent = verse.rawText;
+    userPane.appendChild(arabic);
+    progressStrip.update({
+      surahName: 'Reviewing', ayah: verse.ayah,
+      wordIdx: 0, totalWords: 1, meaning: null
+    });
+  }
+
+  function exitReview() {
+    reviewMode = false;
+    if (rawText) { render(); updateProgress(); }
+  }
+
   function hasInProgressInput() {
     if (!matcher) return false;
     return matcher.state.typed.some(t => t.kind === 'sound');
   }
-
   function noteWrongAttempt() { versePerfect = false; }
 
   return {
     setVerse,
-    setMeaningLookup,
     applyKeyResult,
     noteWrongAttempt,
     hasInProgressInput,
@@ -308,6 +205,7 @@ export function mountPracticeView(root, { onVerseComplete, onPrevAyah } = {}) {
     getMatcher: () => matcher,
     getCurrentAyah: () => ayah,
     getCurrentSurah: () => surah,
+    setMeaningLookup: () => {}, // no-op now; transliteration covers it
     // legacy aliases
     setVerses: (verses) => {
       if (!verses || verses.length === 0) {

@@ -13,44 +13,29 @@ function setup() {
   return { root, api, events };
 }
 
-test('practice-view: setVerse renders canonical pane with current slot glow', () => {
+test('practice-view: setVerse renders transliteration words with current highlight', () => {
   const { root, api } = setup();
-  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قُلْ' });
-  const current = root.querySelectorAll('.canonical-slot--current');
-  assert.equal(current.length, 1);
-  assert.equal(current[0].textContent, 'ق');
+  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قُلْ هُوَ' });
+  const words = root.querySelectorAll('.translit-word');
+  assert.ok(words.length >= 2, 'should render one chip per word');
+  const current = root.querySelectorAll('.translit-word--current');
+  assert.equal(current.length, 1, 'one current word at a time');
 });
 
-test('practice-view: after correct letter, prior slot sealed and user pane updates', () => {
+test('practice-view: after correct letter, user pane shows the typed glyph', () => {
   const { root, api } = setup();
   api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قُلْ' });
   const m = api.getMatcher();
   const r = m.tryLetter('ق');
   api.applyKeyResult(r);
-  assert.ok(root.querySelectorAll('.canonical-slot--sealed').length >= 1);
   assert.ok(root.querySelector('.user-pane').textContent.includes('ق'));
-});
-
-test('practice-view: silent slots render with --silent class (mid-verse definite-article alif)', () => {
-  const { root, api } = setup();
-  // Second word's alif is not at verse start → stays silent.
-  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'بِسْمِ اللَّهِ' });
-  const silents = root.querySelectorAll('.canonical-slot--silent');
-  assert.ok(silents.length >= 1);
 });
 
 test('practice-view: setVerse with empty rawText clears panes', () => {
   const { root, api } = setup();
   api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قُلْ' });
   api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: '' });
-  assert.equal(root.querySelectorAll('.canonical-slot').length, 0);
-});
-
-test('practice-view: first verse uses isVerseStart=true (leading ٱ becomes sound)', () => {
-  const { root, api } = setup();
-  api.setVerse({ surah: 1, surahName: 'Test', ayah: 2, rawText: 'ٱلْحَمْدُ' });
-  const current = root.querySelectorAll('.canonical-slot--current')[0];
-  assert.equal(current?.textContent, 'ٱ');
+  assert.equal(root.querySelectorAll('.translit-word').length, 0);
 });
 
 test('practice-view: hasInProgressInput tracks whether any sound was typed', () => {
