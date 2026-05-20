@@ -1,0 +1,69 @@
+{
+  "_meta": {
+    "description": "Word-by-word English glosses keyed by surah:ayah. Each value is an array, one entry per whitespace-split word in the verse. role: 'prep'|'art'|'conj' marks function words rendered in a distinct color.",
+    "coverage": "Al-Fatiha (1:1–1:7) starter set. More surahs to follow."
+  },
+  "1:1": [
+    { "m": "In the name", "role": "prep" },
+    { "m": "of Allah" },
+    { "m": "the Most Merciful", "role": "art" },
+    { "m": "the Especially Merciful", "role": "art" }
+  ],
+  "1:2": [
+    { "m": "All praise", "role": "art" },
+    { "m": "is for Allah", "role": "prep" },
+    { "m": "Lord" },
+    { "m": "of the worlds", "role": "art" }
+  ],
+  "1:3": [
+    { "m": "the Most Merciful", "role": "art" },
+    { "m": "the Especially Merciful", "role": "art" }
+  ],
+  "1:4": [
+    { "m": "Master" },
+    { "m": "of the Day", "role": "art" },
+    { "m": "of Judgement", "role": "art" }
+  ],
+  "1:5": [
+    { "m": "You alone" },
+    { "m": "we worship" },
+    { "m": "and You alone", "role": "conj" },
+    { "m": "we ask for help" }
+  ],
+  "1:6": [
+    { "m": "Guide us" },
+    { "m": "to the path", "role": "art" },
+    { "m": "the straight one", "role": "art" }
+  ],
+  "1:7": [
+    { "m": "the path" },
+    { "m": "of those" },
+    { "m": "You have favoured" },
+    { "m": "upon them", "role": "prep" },
+    { "m": "not", "role": "conj" },
+    { "m": "of those who earned wrath" },
+    { "m": "upon them", "role": "prep" },
+    { "m": "and not", "role": "conj" },
+    { "m": "those who go astray", "role": "art" }
+  ],
+  "112:1": [
+    { "m": "Say" },
+    { "m": "He is", "role": "conj" },
+    { "m": "Allah" },
+    { "m": "One" }
+  ],
+  "112:2": [
+    { "m": "Allah" },
+    { "m": "the Eternal Refuge", "role": "art" }
+  ],
+  "112:3": [
+    { "m": "He neither begot", "role": "conj" },
+    { "m": "nor was begotten", "role": "conj" }
+  ],
+  "112:4": [
+    { "m": "And there is not", "role": "conj" },
+    { "m": "to Him", "role": "prep" },
+    { "m": "equivalent" },
+    { "m": "anyone" }
+  ]
+}

@@ -10,15 +10,45 @@ const GATED_DIACRITICS = new Set([
   'high_madda'
 ]);
 
+// Indo-Pak script substitutes — they mean the same sound as their canonical
+// counterpart, so the matcher should require the canonical name (and accept
+// either codepoint as input — handled in live-matcher.js).
+const DIACRITIC_ALIASES = {
+  high_dotless_head_of_khah: 'sukun', // U+06E1 (Indo-Pak sukun)
+  high_madda: 'maddah_above'          // U+06E4 (Indo-Pak madda)
+};
+
+// Pause / stop annotations a renderer should show after the letter even
+// though they are not user-typed.
+const PAUSE_MARKS = new Set([
+  'high_ligature_sad_lam', // ۖ
+  'high_qaf_lam',          // ۗ
+  'high_meem_initial',     // ۘ
+  'high_lam',              // ۙ
+  'high_jeem',             // ۚ
+  'high_three_dots',       // ۛ
+  'high_seen',             // ۜ
+  'place_of_sajdah',       // ۩
+  'rub_el_hizb',           // ۞
+  'rounded_high_stop_with_filled_centre' // ۬
+]);
+
+function normalize(d) { return DIACRITIC_ALIASES[d] || d; }
+
 function harakatFor(glyph, extraRequired = []) {
   const required = [];
+  const ornaments = [];
   for (const d of glyph.diacritics) {
-    if (GATED_DIACRITICS.has(d) && !required.includes(d)) required.push(d);
+    const n = normalize(d);
+    if (GATED_DIACRITICS.has(n)) {
+      if (!required.includes(n)) required.push(n);
+    } else {
+      ornaments.push(d);
+    }
   }
   for (const d of extraRequired) {
     if (!required.includes(d)) required.push(d);
   }
-  const ornaments = glyph.diacritics.filter(d => !GATED_DIACRITICS.has(d));
   const out = { required };
   if (required.length === 0) out.hasNone = true;
   if (ornaments.length) out.ornaments = ornaments;

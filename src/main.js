@@ -1,15 +1,16 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
 import { getSurah } from './data/surah-metadata.js';
+import { loadWordMeanings, getWordMeaning } from './data/word-meanings.js';
 import { mountHeader } from './ui/header.js';
 import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
 import { mountMyBook } from './ui/my-book.js';
-import { mountRapidFire } from './ui/rapid-fire.js';
+import { startRapidFire } from './ui/rapid-fire.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
   recordError, recordAttempt, getAccuracy, getCoverage,
-  markVerseComplete, resetStats
+  markVerseComplete, markVerseSkipped, resetStats
 } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
 
@@ -25,7 +26,10 @@ async function init() {
     navigator.serviceWorker.register('./service-worker.js').catch(() => {});
   }
   state.settings = await getSettings();
-  await loadQuran(state.settings.script);
+  await Promise.all([
+    loadQuran(state.settings.script),
+    loadWordMeanings()
+  ]);
 
   const headerEl   = document.getElementById('header');
   const practiceEl = document.getElementById('verse-display');
@@ -34,6 +38,7 @@ async function init() {
   practiceApi = mountPracticeView(practiceEl, {
     onVerseComplete: handleVerseComplete
   });
+  practiceApi.setMeaningLookup(getWordMeaning);
 
   keypadApi = mountKeypad(keypadEl, {
     onLetter:    handleLetter,
@@ -49,7 +54,7 @@ async function init() {
     onOpenSettings: openSettings,
     onScriptToggle: handleScriptToggle,
     onOpenBook: () => mountMyBook(document.body),
-    onOpenRapidFire: () => mountRapidFire(document.body, { reciter: state.settings.reciter })
+    onOpenRapidFire: openRapidFire
   });
 
   refreshHeaderStats();
@@ -131,16 +136,24 @@ function handleNextAyah() {
     const ok = window.confirm('Your writing for this ayah is incomplete. Skip to the next one?');
     if (!ok) return;
   }
+  // Record a skip placeholder in My Book.
+  try {
+    const rt = getVerse(state.surah, state.ayah);
+    markVerseSkipped({ surah: state.surah, ayah: state.ayah, rawText: rt })
+      .catch(() => {});
+  } catch {}
   advanceToNextAyah({ skipped: true });
 }
 
-async function handleVerseComplete({ surah, ayah, rawText, perfect }) {
-  await markVerseComplete({ surah, ayah, rawText, perfect });
-  refreshHeaderStats();
+function handleVerseComplete({ surah, ayah, rawText, perfect }) {
+  // Don't block advancement on DB writes — record fire-and-forget.
+  markVerseComplete({ surah, ayah, rawText, perfect })
+    .then(() => refreshHeaderStats())
+    .catch(err => console.warn('markVerseComplete failed:', err));
   advanceToNextAyah({ skipped: false });
 }
 
-function advanceToNextAyah() {
+function advanceToNextAyah({ slide = true } = {}) {
   const nextAyah = state.ayah + 1;
   if (nextAyah > state.surahMax) {
     practiceApi.showRangeEnd([
@@ -155,21 +168,22 @@ function advanceToNextAyah() {
     return;
   }
   state.ayah = nextAyah;
-  loadCurrentVerse();
+  loadCurrentVerse({ slide: true });
 }
 
 function loadCurrentSurahFromStart() {
   state.ayah = 1;
-  loadCurrentVerse();
+  loadCurrentVerse({ slide: true });
 }
 
-function loadCurrentVerse() {
+function loadCurrentVerse({ slide = false } = {}) {
   const rawText = getVerse(state.surah, state.ayah);
   practiceApi.setVerse({
     surah: state.surah,
     surahName: state.surahName,
     ayah: state.ayah,
-    rawText
+    rawText,
+    slide
   });
   refreshHints();
 }
@@ -194,6 +208,26 @@ function openSettings() {
     settings: state.settings,
     onChange: async (patch) => { state.settings = await updateSettings(patch); refreshHints(); },
     onResetStats: async () => { await resetStats(); refreshHeaderStats(); }
+  });
+}
+
+async function openRapidFire() {
+  const verseEl  = document.getElementById('verse-display');
+  const keypadEl = document.getElementById('keypad-view');
+  await startRapidFire({
+    verseEl, keypadEl, keypadApi,
+    reciter: state.settings.reciter,
+    onExit: () => {
+      // Restore normal handlers and re-render current verse.
+      keypadApi.setHandlers({
+        onLetter:    handleLetter,
+        onHarakat:   handleHarakat,
+        onBackspace: handleBackspace,
+        onPlayAudio: playCurrentAyah,
+        onNextAyah:  handleNextAyah
+      });
+      loadCurrentVerse();
+    }
   });
 }
 

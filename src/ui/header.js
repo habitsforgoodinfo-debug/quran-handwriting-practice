@@ -36,7 +36,8 @@ export function mountHeader(root, {
   bookBtn.addEventListener('click', () => onOpenBook && onOpenBook());
 
   const rapidBtn = document.createElement('button');
-  rapidBtn.className = 'rapid-fire'; rapidBtn.textContent = '🎯'; rapidBtn.title = 'Rapid fire';
+  rapidBtn.className = 'rapid-fire'; rapidBtn.textContent = '🎧';
+  rapidBtn.title = 'Listen & write (audio dictation drill)';
   rapidBtn.addEventListener('click', () => onOpenRapidFire && onOpenRapidFire());
 
   const settingsBtn = document.createElement('button');

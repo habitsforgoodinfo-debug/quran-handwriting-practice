@@ -70,6 +70,21 @@ export async function markVerseComplete({ surah, ayah, rawText, perfect },
   await deps.verseStorePut(key, {
     surah, ayah, rawText,
     perfect: !!perfect,
+    skipped: false,
+    completedAt: Date.now()
+  });
+}
+
+export async function markVerseSkipped({ surah, ayah, rawText },
+                                       deps = { verseStorePut, verseStoreGetAll }) {
+  const key = `${surah}:${ayah}`;
+  // Don't overwrite an already-completed entry with a skip.
+  const existing = await deps.verseStoreGetAll();
+  if (existing.some(r => r.key === key && r.value && !r.value.skipped)) return;
+  await deps.verseStorePut(key, {
+    surah, ayah, rawText,
+    perfect: false,
+    skipped: true,
     completedAt: Date.now()
   });
 }

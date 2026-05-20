@@ -11,7 +11,7 @@ export async function mountMyBook(root) {
   const head = document.createElement('div');
   head.className = 'my-book__head';
   const h = document.createElement('h3');
-  h.textContent = '📖 My book — verses written by your hand';
+  h.textContent = '📖 My book — verses I have written by hand';
   const closeBtn = document.createElement('button');
   closeBtn.className = 'close';
   closeBtn.textContent = 'Close';
@@ -29,7 +29,8 @@ export async function mountMyBook(root) {
   const verses = await getCompletedVerses();
   body.innerHTML = '';
 
-  if (verses.length === 0) {
+  const written = verses.filter(v => !v.skipped);
+  if (written.length === 0) {
     const empty = document.createElement('div');
     empty.className = 'my-book__empty';
     empty.textContent = 'Your book is empty for now. Finish an ayah to add it here.';
@@ -37,7 +38,7 @@ export async function mountMyBook(root) {
     return;
   }
 
-  // Group by surah
+  // Group by surah, preserving order.
   const bySurah = new Map();
   for (const v of verses) {
     if (!bySurah.has(v.surah)) bySurah.set(v.surah, []);
@@ -49,31 +50,44 @@ export async function mountMyBook(root) {
     block.className = 'my-book__surah';
     const meta = getSurah(surahNum);
     const title = document.createElement('h4');
+    title.className = 'my-book__surah-title';
     title.textContent = `${meta?.name_en || 'Surah ' + surahNum} · ${meta?.name_ar || ''}`;
     block.appendChild(title);
 
+    // Render as a flowing mushaf-style paragraph: verses run together,
+    // separated by their ayah-number marker. Skipped ayahs become an
+    // inline `…(N)` placeholder.
+    const flow = document.createElement('div');
+    flow.className = 'my-book__flow';
+    flow.dir = 'rtl';
+
     for (const v of list) {
-      const verseLine = document.createElement('p');
-      verseLine.className = 'my-book__verse';
-      const num = document.createElement('span');
-      num.className = 'my-book__num';
-      num.textContent = `${v.ayah}`;
-      const text = document.createElement('span');
-      text.className = 'my-book__text';
-      text.textContent = v.rawText;
-      if (v.perfect) {
-        const star = document.createElement('span');
-        star.className = 'my-book__star'; star.textContent = '★';
-        verseLine.appendChild(star);
+      if (v.skipped) {
+        const skip = document.createElement('span');
+        skip.className = 'my-book__skip';
+        skip.textContent = ` ⋯(${v.ayah}) `;
+        skip.title = `Ayah ${v.ayah} — not yet completed`;
+        flow.appendChild(skip);
+        continue;
       }
-      verseLine.append(text, num);
-      block.appendChild(verseLine);
+      const text = document.createElement('span');
+      text.className = 'my-book__text' + (v.perfect ? ' my-book__text--perfect' : '');
+      text.textContent = v.rawText;
+      const marker = document.createElement('span');
+      marker.className = 'my-book__marker';
+      marker.textContent = `۝${v.ayah} `;
+      flow.append(text, document.createTextNode(' '), marker);
     }
+    block.appendChild(flow);
     body.appendChild(block);
   }
 
-  const note = document.createElement('div');
-  note.className = 'my-book__note';
-  note.textContent = `${verses.length} ayahs written. (PDF export coming soon.)`;
-  body.appendChild(note);
+  const summary = document.createElement('div');
+  summary.className = 'my-book__note';
+  const completedCount = written.length;
+  const skippedCount = verses.length - completedCount;
+  summary.textContent = `${completedCount} ayahs written`
+    + (skippedCount ? ` · ${skippedCount} placeholders for skipped` : '')
+    + '. ★ marks ayahs you wrote without any mistake.';
+  body.appendChild(summary);
 }

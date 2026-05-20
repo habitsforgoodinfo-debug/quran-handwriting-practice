@@ -167,3 +167,31 @@ test('matcher: waqf-eligible tanween_fath slot accepts bare fatha', () => {
   assert.equal(r.accepted, true);
   assert.equal(r.complete, true);
 });
+
+test('matcher: wrong-mode keystroke also increments rejectCount (letter when awaiting harakat)', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'));
+  assert.equal(m.tryLetter('ق').accepted, true);
+  // awaiting harakat now — press a letter key
+  const r = m.tryLetter('ل');
+  assert.equal(r.accepted, false);
+  assert.equal(m.state.rejectCount, 1);
+});
+
+test('matcher: wrong-mode keystroke also increments rejectCount (harakat when awaiting letter)', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'));
+  // awaiting letter — press a harakat
+  const r = m.tryHarakat('َ');
+  assert.equal(r.accepted, false);
+  assert.equal(m.state.rejectCount, 1);
+});
+
+test('matcher: Indo-Pak sukun (ۡ) is accepted as sukun input', () => {
+  const fake = [
+    { kind: 'sound', letter: 'ق', expectedHarakat: { required: ['sukun'] }, wordIdx: 0, canonicalIdx: 0 },
+    { kind: 'wordEnd', wordIdx: 0 }
+  ];
+  const m = new LiveMatcher(fake);
+  m.tryLetter('ق');
+  const r = m.tryHarakat('ۡ');
+  assert.equal(r.accepted, true);
+});

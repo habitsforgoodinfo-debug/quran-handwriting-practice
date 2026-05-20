@@ -1,6 +1,7 @@
 import { buildSkeleton } from '../verse/skeleton.js';
 import { LiveMatcher } from '../compare/live-matcher.js';
 import { mountHeatmapStrip } from './heatmap-strip.js';
+import { _diacriticCharByName as CHAR_BY_NAME } from '../verse/parser.js';
 
 export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
   root.innerHTML = '';
@@ -32,7 +33,7 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     updateProgress();
   }
 
-  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt }) {
+  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt, slide = false }) {
     surah = s; surahName = sn; ayah = a; rawText = rt;
     banner.style.display = 'none';
     banner.innerHTML = '';
@@ -43,7 +44,18 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
       progressStrip.update(null);
       return;
     }
-    loadCurrentVerse();
+    if (slide) {
+      canonicalPane.classList.add('canonical-pane--sliding');
+      userPane.classList.add('user-pane--sliding');
+      // Render after the slide-out finishes so the new verse slides in.
+      setTimeout(() => {
+        loadCurrentVerse();
+        canonicalPane.classList.remove('canonical-pane--sliding');
+        userPane.classList.remove('user-pane--sliding');
+      }, 220);
+    } else {
+      loadCurrentVerse();
+    }
   }
 
   function showRangeEnd(buttons = []) {
@@ -78,13 +90,19 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
     return Math.max(0, ...skeleton.map(s => (s.wordIdx ?? -1) + 1));
   }
 
+  let meaningLookup = null; // (surah, ayah, wordIdx) => {m, role}|null
+  function setMeaningLookup(fn) { meaningLookup = fn; }
+
   function updateProgress() {
     if (!surahName) { progressStrip.update(null); return; }
+    const wi = getCurrentWordIdx();
+    let meaning = null;
+    if (meaningLookup) meaning = meaningLookup(surah, ayah, wi);
     progressStrip.update({
       surahName, ayah,
-      wordIdx: getCurrentWordIdx(),
+      wordIdx: wi,
       totalWords: getTotalWords(),
-      tip: null
+      meaning
     });
   }
 
@@ -98,7 +116,13 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
         continue;
       }
       const span = document.createElement('span');
-      span.textContent = slot.letter;
+      // Include any non-typed ornament marks (pause stops, etc.) so the
+      // verse looks like its printed form. Combining marks attach to the
+      // preceding base letter.
+      const ornamentChars = (slot.expectedHarakat?.ornaments || [])
+        .map(n => CHAR_BY_NAME[n])
+        .filter(Boolean).join('');
+      span.textContent = slot.letter + ornamentChars;
       const classes = ['canonical-slot'];
       if (slot.kind === 'silent') classes.push('canonical-slot--silent');
       const sealedUpTo = matcher.state.awaiting === 'harakat'
@@ -153,6 +177,7 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
 
   return {
     setVerse,
+    setMeaningLookup,
     applyKeyResult,
     noteWrongAttempt,
     hasInProgressInput,

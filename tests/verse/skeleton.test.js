@@ -79,3 +79,21 @@ test('skeleton: last sound slot of verse carries acceptWaqf=true', () => {
   const others = soundSlots.slice(0, -1);
   for (const s of others) assert.notEqual(s.acceptWaqf, true);
 });
+
+test('skeleton: Indo-Pak sukun glyph (ۡ) normalized to required=[sukun]', () => {
+  // بِسۡمِ — س has ۡ (high_dotless_head_of_khah → sukun)
+  const slots = buildSkeleton('بِسۡمِ');
+  const seen = slots.find(s => s.letter === 'س');
+  assert.ok(seen);
+  assert.ok(new Set(seen.expectedHarakat.required).has('sukun'));
+});
+
+test('skeleton: pause marks (e.g. ۙ) go into ornaments not required', () => {
+  // Construct a verse with the high_lam pause mark.
+  const slots = buildSkeleton('قُلْۙ');
+  const lam = slots.find(s => s.letter === 'ل');
+  assert.ok(lam);
+  // sukun stays required; the pause becomes ornament-only
+  assert.ok(new Set(lam.expectedHarakat.required).has('sukun'));
+  assert.ok((lam.expectedHarakat.ornaments || []).includes('high_lam'));
+});

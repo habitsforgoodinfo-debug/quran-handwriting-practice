@@ -26,12 +26,18 @@ html, body {
   direction: rtl; text-align: right;
   line-height: 2.2;
 }
-.canonical-pane { font-size: 32px; padding: 6px 4px; transition: background 250ms ease; border-radius: 8px; }
+.canonical-pane { font-size: 38px; padding: 6px 4px; transition: background 250ms ease, transform 220ms ease, opacity 220ms ease; border-radius: 8px; }
 .canonical-pane.canonical-pane--celebrate {
   background: rgba(88, 204, 2, 0.22);
   box-shadow: 0 0 0 2px #58cc02;
 }
-.user-pane      { font-size: 28px; padding: 6px 4px; min-height: 2.2em; }
+.canonical-pane.canonical-pane--sliding {
+  transform: translateX(-30px); opacity: 0;
+}
+.user-pane.user-pane--sliding {
+  transform: translateX(-30px); opacity: 0;
+}
+.user-pane      { font-size: 32px; padding: 6px 4px; min-height: 2.2em; transition: transform 220ms ease, opacity 220ms ease; }
 .pane-divider   { border-top: 1px dashed #d8cdb8; margin: 4px 0; }
 
 .canonical-slot                  { color: #1c1c1c; }
@@ -59,10 +65,14 @@ html, body {
 .banner-btn.primary   { background: #58cc02; color: white; border-color: #4ab300; font-weight: 700; }
 .banner-btn.secondary { background: #ffffff; color: #1c1c1c; }
 
-/* Progress strip (was heatmap) */
-.progress-strip { display: flex; gap: 6px; align-items: baseline; padding: 4px 2px; font-size: 13px; color: #5b5346; }
+/* Progress + meaning strip (was heatmap) */
+.progress-strip { display: flex; gap: 6px; align-items: baseline; padding: 4px 2px; font-size: 14px; color: #5b5346; flex-wrap: wrap; }
 .progress-pos   { font-weight: 600; }
-.progress-tip   { font-style: italic; color: #7a705e; }
+.progress-meaning { color: #1c1c1c; font-size: 14px; }
+.progress-meaning__word { background: #fff8dc; padding: 1px 6px; border-radius: 4px; }
+.progress-meaning__word--prep { background: #e8f6fe; color: #1cb0f6; }
+.progress-meaning__word--art  { background: #fbe8ff; color: #8a4fb8; }
+.progress-meaning__word--conj { background: #fef2c0; color: #8a6300; }
 
 .keypad-harakat { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }
@@ -73,14 +83,14 @@ html, body {
 .keypad-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
 
 .key {
-  min-height: 44px; font-size: 22px;
+  min-height: 46px; font-size: 26px;
   background: #ffffff; color: #1c1c1c;
   border: 1px solid #d8cdb8; border-radius: 8px;
   font-family: 'Amiri', 'NotoNaskhArabic', serif;
   touch-action: manipulation; padding: 0; user-select: none; cursor: pointer;
 }
 .key:active { background: #f7efdc; }
-.key--harakah { font-size: 32px; min-height: 48px; line-height: 1; }
+.key--harakah { font-size: 40px; min-height: 56px; line-height: 1; padding-bottom: 6px; }
 .key--action  { font-family: 'Nunito', 'Inter', system-ui, sans-serif; font-size: 14px; }
 .key--action.audio { background: #e8f6fe; color: #1cb0f6; border-color: #b9e3fb; }
 .key--action.next  { background: #f1fbe6; color: #1c1c1c; border-color: #b8e08a; }
@@ -112,29 +122,40 @@ html, body {
 .my-book__head h3 { margin: 0; font-size: 18px; }
 .my-book__body { display: flex; flex-direction: column; gap: 16px; }
 .my-book__surah { border-top: 1px solid #eee2cf; padding-top: 12px; }
-.my-book__surah h4 { margin: 0 0 8px 0; font-size: 15px; color: #2c8a02; }
-.my-book__verse {
-  margin: 0 0 6px 0; padding: 6px 0; font-family: 'Amiri','NotoNaskhArabic',serif;
-  direction: rtl; text-align: right; font-size: 22px; line-height: 2;
+.my-book__surah-title { margin: 0 0 8px 0; font-size: 15px; color: #2c8a02; }
+.my-book__flow {
+  font-family: 'Amiri','NotoNaskhArabic',serif;
+  direction: rtl; text-align: justify;
+  font-size: 26px; line-height: 2.2;
+  color: #1c1c1c;
 }
-.my-book__num { color: #9aa0a6; font-size: 12px; font-family: 'Nunito',sans-serif; margin-right: 8px; }
-.my-book__star { color: #ffc800; margin-left: 4px; }
+.my-book__text             { padding: 0 2px; }
+.my-book__text--perfect    { color: #2c8a02; }
+.my-book__marker {
+  color: #b8860b; font-size: 14px; font-family: 'Nunito',sans-serif;
+  margin: 0 4px;
+}
+.my-book__skip {
+  display: inline-block; padding: 0 4px; color: #b8b0a0;
+  background: #f7efdc; border-radius: 4px; font-family: 'Nunito',sans-serif;
+  font-size: 14px; vertical-align: middle;
+}
 .my-book__empty { color: #9aa0a6; font-style: italic; padding: 12px 0; }
 .my-book__note  { color: #5b5346; font-size: 12px; padding-top: 8px; border-top: 1px dashed #d8cdb8; }
 
-/* Rapid fire */
-.rapid-fire__panel { width: 90vw; max-width: 720px; }
-.rapid-fire__head { display: flex; justify-content: space-between; align-items: center; }
-.rapid-fire__head h3 { margin: 0; }
-.rapid-fire__status { color: #5b5346; font-size: 13px; }
-.rapid-fire__bar { display: flex; gap: 8px; }
-.rapid-fire__play { background: #1cb0f6; color: white; border-color: #1cb0f6; }
-.rapid-fire__skip { background: #f7efdc; color: #1c1c1c; }
-.rapid-fire__canon { font-size: 26px; }
-.rapid-fire__user  { font-size: 22px; min-height: 1.6em; }
-.rapid-fire__score { font-size: 32px; font-weight: 800; color: #58cc02; }
-.rapid-fire__detail { color: #5b5346; }
-.rapid-fire__keypad { margin-top: 8px; }
+/* Rapid fire (inline) */
+.rapid-fire-inline { display: flex; flex-direction: column; gap: 8px; padding: 4px; }
+.rf-head { display: flex; justify-content: space-between; align-items: center; }
+.rf-title { font-weight: 700; }
+.rf-exit { background: #f7efdc; color: #1c1c1c; border: 1px solid #d8cdb8; border-radius: 6px; padding: 4px 10px; cursor: pointer; }
+.rf-status { color: #5b5346; font-size: 14px; min-height: 1.4em; }
+.rf-canon  { font-size: 32px; }
+.rf-user   { font-size: 26px; min-height: 1.6em; }
+.rf-bar    { display: flex; gap: 8px; }
+.rf-play   { background: #1cb0f6; color: white; border: 1px solid #1cb0f6; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+.rf-skip   { background: #f7efdc; color: #1c1c1c; border: 1px solid #d8cdb8; border-radius: 6px; padding: 8px 14px; cursor: pointer; }
+.rf-score  { font-size: 36px; font-weight: 800; color: #58cc02; }
+.rf-detail { color: #5b5346; }
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff4b4b; color: white; padding: 10px 16px; border-radius: 8px; z-index: 200; display: flex; align-items: center; gap: 8px; }
 .toast button.toast-retry   { background: white; color: #ff4b4b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }

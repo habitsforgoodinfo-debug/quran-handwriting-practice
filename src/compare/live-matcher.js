@@ -10,6 +10,8 @@ const HARAKAT_NAME = Object.fromEntries(
 );
 // U+06E4 (Indo-Pak high madda) also represents 'maddah_above' for input.
 HARAKAT_NAME['ۤ'] = 'maddah_above';
+// U+06E1 (Indo-Pak sukun-substitute, dotless head of khah) → sukun.
+HARAKAT_NAME['ۡ'] = 'sukun';
 
 const AUTO_CONSUME_SILENT = new Set(['ا', 'و', 'ي', 'ى', 'ل', 'ٱ']);
 
@@ -95,7 +97,13 @@ export class LiveMatcher {
   }
 
   tryLetter(ch) {
-    if (this.state.awaiting !== 'letter') return { accepted: false, autoInserted: [] };
+    if (this.state.awaiting !== 'letter') {
+      // Pressing a letter when a harakat is expected still counts as a wrong
+      // attempt, so the hint logic can step in agnostic of which side of the
+      // keypad the user is mashing.
+      this.state.rejectCount++;
+      return { accepted: false, autoInserted: [] };
+    }
     const slot = this.skeleton[this.state.slotIdx];
     if (!slot || (slot.kind !== 'sound' && slot.kind !== 'silent')) {
       this.state.rejectCount++;
@@ -119,7 +127,10 @@ export class LiveMatcher {
   }
 
   tryHarakat(ch) {
-    if (this.state.awaiting !== 'harakat') return { accepted: false };
+    if (this.state.awaiting !== 'harakat') {
+      this.state.rejectCount++;
+      return { accepted: false };
+    }
     const name = HARAKAT_NAME[ch];
     if (!name) {
       this.state.rejectCount++;
