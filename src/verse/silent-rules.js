@@ -9,8 +9,11 @@ const LAM = 'ل';
 export function isSilentInWord(glyphs, index) {
   const g = glyphs[index];
   if (!g) return false;
+  // The madd alif (alif elongating a preceding fatha, e.g. قَالَ) is NOT
+  // silent — the user must type it. Its skeleton slot stays `sound` with
+  // hasNone=true and seals on the letter alone.
+  if (g.isMaddAlif) return false;
   if (g.isSilent) return true;
-  if (g.isMaddAlif) return true;
 
   if (index === 1
       && g.letter === LAM

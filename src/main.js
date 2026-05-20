@@ -13,6 +13,7 @@ import {
   markVerseComplete, markVerseSkipped, resetStats
 } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
+import { chimeComplete } from './ui/feedback.js';
 
 const state = {
   surah: 1, ayah: 1, surahMax: 7, surahName: 'Al-Fatiha',
@@ -46,7 +47,7 @@ async function init() {
     onBackspace: handleBackspace,
     onPlayAudio: playCurrentAyah,
     onNextAyah:  handleNextAyah
-  });
+  }, { script: state.settings.script });
 
   headerApi = mountHeader(headerEl, {
     initial: { surah: state.surah, fromAyah: state.ayah, toAyah: state.ayah, script: state.settings.script },
@@ -146,7 +147,7 @@ function handleNextAyah() {
 }
 
 function handleVerseComplete({ surah, ayah, rawText, perfect }) {
-  // Don't block advancement on DB writes — record fire-and-forget.
+  chimeComplete();
   markVerseComplete({ surah, ayah, rawText, perfect })
     .then(() => refreshHeaderStats())
     .catch(err => console.warn('markVerseComplete failed:', err));
@@ -191,6 +192,7 @@ function loadCurrentVerse({ slide = false } = {}) {
 async function handleScriptToggle(nextScript) {
   state.settings = await updateSettings({ script: nextScript });
   await loadQuran(nextScript);
+  if (keypadApi.setScript) keypadApi.setScript(nextScript);
   loadCurrentVerse();
 }
 

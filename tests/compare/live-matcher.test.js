@@ -44,23 +44,28 @@ test('matcher: full word قُلْ completes', () => {
   assert.equal(m.state.awaiting, 'done');
 });
 
-test('matcher: silent madd alif auto-consumed in قَالَ', () => {
+test('matcher: madd alif in قَالَ is typed (not auto-consumed)', () => {
   const m = new LiveMatcher(buildSkeleton('قَالَ'));
   m.tryLetter('ق'); m.tryHarakat(HARAKAT.fatha);
-  // Next expected is ل, not ا
-  assert.equal(m.tryLetter('ا').accepted, false);
+  // Next expected is ا (madd alif), then ل
+  assert.equal(m.tryLetter('ل').accepted, false);
+  assert.equal(m.tryLetter('ا').accepted, true);
   assert.equal(m.tryLetter('ل').accepted, true);
+  m.tryHarakat(HARAKAT.fatha);
+  assert.equal(m.state.awaiting, 'done');
 });
 
-test('matcher: shadda+vowel accepted in either order', () => {
+test('matcher: shadda+vowel accepted in either order — إِنَّا includes terminal madd alif', () => {
   const m1 = new LiveMatcher(buildSkeleton('إِنَّا'));
   m1.tryLetter('ا'); m1.tryHarakat(HARAKAT.kasra);
   m1.tryLetter('ن'); m1.tryHarakat(HARAKAT.shadda); m1.tryHarakat(HARAKAT.fatha);
+  m1.tryLetter('ا'); // typed madd alif
   assert.equal(m1.state.awaiting, 'done');
 
   const m2 = new LiveMatcher(buildSkeleton('إِنَّا'));
   m2.tryLetter('ا'); m2.tryHarakat(HARAKAT.kasra);
   m2.tryLetter('ن'); m2.tryHarakat(HARAKAT.fatha); m2.tryHarakat(HARAKAT.shadda);
+  m2.tryLetter('ا');
   assert.equal(m2.state.awaiting, 'done');
 });
 

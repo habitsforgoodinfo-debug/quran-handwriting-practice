@@ -12,9 +12,12 @@ test('skeleton: simple verse — sound + wordEnd per word', () => {
   assert.deepEqual(reqSet(slots[1]), new Set(['sukun']));
 });
 
-test('skeleton: madd alif becomes silent slot', () => {
+test('skeleton: madd alif is a sound slot with hasNone (user types it)', () => {
   const slots = buildSkeleton('قَالَ');
-  assert.deepEqual(kinds(slots), ['sound','silent','sound','wordEnd']);
+  assert.deepEqual(kinds(slots), ['sound','sound','sound','wordEnd']);
+  const alif = slots[1];
+  assert.equal(alif.letter, 'ا');
+  assert.equal(alif.expectedHarakat.hasNone, true);
 });
 
 test('skeleton: shadda + fatha → required contains both', () => {

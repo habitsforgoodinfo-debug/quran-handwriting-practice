@@ -26,14 +26,21 @@ export function mountHeatmapStrip(root) {
     posEl.textContent = `${surahName} · ${ayah} · word ${
       Math.min(wordIdx + 1, totalWords)
     } of ${totalWords}`;
+    // Word-by-word meaning now renders interlinear under each canonical
+    // word, so the strip only shows transliteration of the current word.
     meaningEl.innerHTML = '';
-    if (meaning && meaning.m) {
-      const sep = document.createElement('span'); sep.textContent = ' — ';
-      const m = document.createElement('span');
-      m.className = 'progress-meaning__word';
-      if (meaning.role) m.classList.add('progress-meaning__word--' + meaning.role);
-      m.textContent = meaning.m;
-      meaningEl.append(sep, m);
+    if (meaning && meaning.tl) {
+      const sep = document.createElement('span'); sep.textContent = ' · ';
+      const t = document.createElement('span');
+      t.className = 'progress-meaning__tl';
+      t.textContent = meaning.tl;
+      meaningEl.append(sep, t);
+      if (meaning.root && meaning.root !== '—') {
+        const r = document.createElement('span');
+        r.className = 'progress-meaning__root';
+        r.textContent = ' · root ' + meaning.root;
+        meaningEl.appendChild(r);
+      }
     }
   }
 

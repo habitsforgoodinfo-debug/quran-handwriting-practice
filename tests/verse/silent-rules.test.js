@@ -25,9 +25,9 @@ test('silent-rules: plural-masculine alif (كَتَبُوا) — final alif sile
   assert.equal(m[m.length - 1], true);
 });
 
-test('silent-rules: madd alif (قَالَ) — alif silent', () => {
+test('silent-rules: madd alif (قَالَ) — alif is SOUND (user types it)', () => {
   const glyphs = parseWord('قَالَ');
-  assert.equal(isSilentInWord(glyphs, 1), true);
+  assert.equal(isSilentInWord(glyphs, 1), false);
 });
 
 test('silent-rules: ordinary letter with harakat is NOT silent', () => {

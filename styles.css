@@ -26,7 +26,27 @@ html, body {
   direction: rtl; text-align: right;
   line-height: 2.2;
 }
-.canonical-pane { font-size: 38px; padding: 6px 4px; transition: background 250ms ease, transform 220ms ease, opacity 220ms ease; border-radius: 8px; }
+.canonical-pane {
+  font-size: 38px; padding: 6px 4px;
+  transition: background 250ms ease, transform 220ms ease, opacity 220ms ease;
+  border-radius: 8px;
+  display: flex; flex-wrap: wrap; gap: 14px 16px;
+  direction: rtl; justify-content: flex-start;
+}
+.canonical-word {
+  display: inline-flex; flex-direction: column; align-items: center;
+  line-height: 1.2;
+}
+.canonical-word__top { display: inline-block; }
+.canonical-word__meaning {
+  font-family: 'Nunito','Inter',system-ui,sans-serif;
+  font-size: 12px; color: #5b5346;
+  margin-top: 4px; direction: ltr;
+  max-width: 12em; text-align: center;
+}
+.canonical-word__meaning--prep { color: #1cb0f6; }
+.canonical-word__meaning--art  { color: #8a4fb8; }
+.canonical-word__meaning--conj { color: #8a6300; }
 .canonical-pane.canonical-pane--celebrate {
   background: rgba(88, 204, 2, 0.22);
   box-shadow: 0 0 0 2px #58cc02;
@@ -68,11 +88,9 @@ html, body {
 /* Progress + meaning strip (was heatmap) */
 .progress-strip { display: flex; gap: 6px; align-items: baseline; padding: 4px 2px; font-size: 14px; color: #5b5346; flex-wrap: wrap; }
 .progress-pos   { font-weight: 600; }
-.progress-meaning { color: #1c1c1c; font-size: 14px; }
-.progress-meaning__word { background: #fff8dc; padding: 1px 6px; border-radius: 4px; }
-.progress-meaning__word--prep { background: #e8f6fe; color: #1cb0f6; }
-.progress-meaning__word--art  { background: #fbe8ff; color: #8a4fb8; }
-.progress-meaning__word--conj { background: #fef2c0; color: #8a6300; }
+.progress-meaning { color: #5b5346; font-size: 12px; }
+.progress-meaning__tl   { font-style: italic; color: #1c1c1c; }
+.progress-meaning__root { color: #8a6300; }
 
 .keypad-harakat { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }

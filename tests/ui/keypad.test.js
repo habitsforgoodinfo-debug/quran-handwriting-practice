@@ -3,7 +3,7 @@ import assert from 'node:assert/strict';
 import { makeDocument } from '../_helpers/dom-stub.js';
 import { mountKeypad } from '../../src/ui/keypad.js';
 
-function setup() {
+function setup(script = 'uthmani') {
   const doc = makeDocument();
   globalThis.document = doc;
   const root = doc.createElement('div');
@@ -13,7 +13,7 @@ function setup() {
     onHarakat:   (c) => calls.harakat.push(c),
     onBackspace: () => calls.backspace++,
     onPlayAudio: () => calls.audio++
-  });
+  }, { script });
   return { root, api, calls };
 }
 
@@ -112,4 +112,27 @@ test('keypad: → next ayah action key fires onNextAyah', () => {
 test('keypad: harakat row has exactly 10 keys', () => {
   const { root } = setup();
   assert.equal(root.querySelectorAll('.key--harakah').length, 10);
+});
+
+test('keypad: indopak script displays jazm sukun (ۡ) but still fires canonical ْ', () => {
+  const doc = makeDocument();
+  globalThis.document = doc;
+  const root = doc.createElement('div');
+  const calls = { harakat: [] };
+  mountKeypad(root, { onHarakat: c => calls.harakat.push(c) }, { script: 'indopak' });
+  const k = root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ۡ'));
+  assert.ok(k, 'jazm key (ۡ) should display in indopak mode');
+  k.dispatch('click');
+  // Handler still receives the canonical ْ so the matcher accepts either form.
+  assert.deepEqual(calls.harakat, ['ْ']);
+});
+
+test('keypad: setScript swaps the sukun glyph live', () => {
+  const doc = makeDocument();
+  globalThis.document = doc;
+  const root = doc.createElement('div');
+  const api = mountKeypad(root, { onHarakat: () => {} }, { script: 'uthmani' });
+  assert.ok(root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ْ')));
+  api.setScript('indopak');
+  assert.ok(root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ۡ')));
 });

@@ -31,9 +31,10 @@ test('practice-view: after correct letter, prior slot sealed and user pane updat
   assert.ok(root.querySelector('.user-pane').textContent.includes('ق'));
 });
 
-test('practice-view: silent slots render with --silent class', () => {
+test('practice-view: silent slots render with --silent class (mid-verse definite-article alif)', () => {
   const { root, api } = setup();
-  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قَالَ' });
+  // Second word's alif is not at verse start → stays silent.
+  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'بِسْمِ اللَّهِ' });
   const silents = root.querySelectorAll('.canonical-slot--silent');
   assert.ok(silents.length >= 1);
 });

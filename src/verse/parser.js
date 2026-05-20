@@ -56,10 +56,21 @@ const ALIF = 'ا';      // ا
 // and punctuation, NOT combining marks.
 function isCombiningMark(ch) {
   const c = ch.codePointAt(0);
-  if (c >= 0x064B && c <= 0x065F) return true;
-  if (c === 0x0670) return true;
-  if (c >= 0x06D6 && c <= 0x06ED) return true;
+  if (c >= 0x0610 && c <= 0x061A) return true; // Arabic small high marks
+  if (c >= 0x064B && c <= 0x065F) return true; // harakat block
+  if (c === 0x0670) return true;               // superscript alif
+  if (c >= 0x06D6 && c <= 0x06ED) return true; // small high Quranic annotations
+  if (c >= 0x08D3 && c <= 0x08FF) return true; // Arabic Extended-A combining marks
   return false;
+}
+
+// Zero-width / bidi formatting characters that must be stripped before
+// parsing — otherwise they appear as phantom base letters that the user
+// can never type, blocking verse completion. Indo-Pak data appends U+200F
+// (right-to-left mark) at the end of every verse.
+const FORMATTING_RE = /[​-‏‪-‮⁦-⁩﻿]/g;
+function stripFormatting(s) {
+  return s.replace(FORMATTING_RE, '');
 }
 
 export function parseWord(word) {
@@ -94,7 +105,7 @@ export function parseWord(word) {
 }
 
 export function parseVerse(verseText) {
-  return verseText
+  return stripFormatting(verseText)
     .trim()
     .split(/\s+/)
     .filter(Boolean)

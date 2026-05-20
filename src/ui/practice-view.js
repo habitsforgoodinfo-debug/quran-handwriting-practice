@@ -109,31 +109,59 @@ export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
   function render() {
     if (!matcher) return;
     canonicalPane.innerHTML = '';
+    // Group consecutive non-wordEnd slots by wordIdx into word blocks; each
+    // block stacks the Arabic slots above its English meaning.
+    const sealedUpTo = matcher.state.awaiting === 'harakat'
+      ? matcher.state.slotIdx
+      : matcher.state.slotIdx - 1;
+
+    const blocks = [];
+    let current = null;
     for (let i = 0; i < skeleton.length; i++) {
       const slot = skeleton[i];
-      if (slot.kind === 'wordEnd') {
-        canonicalPane.appendChild(document.createTextNode(' '));
-        continue;
+      if (slot.kind === 'wordEnd') { current = null; continue; }
+      if (!current || current.wordIdx !== slot.wordIdx) {
+        current = { wordIdx: slot.wordIdx, slots: [] };
+        blocks.push(current);
       }
-      const span = document.createElement('span');
-      // Include any non-typed ornament marks (pause stops, etc.) so the
-      // verse looks like its printed form. Combining marks attach to the
-      // preceding base letter.
-      const ornamentChars = (slot.expectedHarakat?.ornaments || [])
-        .map(n => CHAR_BY_NAME[n])
-        .filter(Boolean).join('');
-      span.textContent = slot.letter + ornamentChars;
-      const classes = ['canonical-slot'];
-      if (slot.kind === 'silent') classes.push('canonical-slot--silent');
-      const sealedUpTo = matcher.state.awaiting === 'harakat'
-        ? matcher.state.slotIdx
-        : matcher.state.slotIdx - 1;
-      if (i <= sealedUpTo) classes.push('canonical-slot--sealed');
-      else if (i === matcher.state.slotIdx && slot.kind === 'sound') classes.push('canonical-slot--current');
-      else classes.push('canonical-slot--future');
-      span.className = classes.join(' ');
-      canonicalPane.appendChild(span);
+      current.slots.push({ slot, idx: i });
     }
+
+    for (const block of blocks) {
+      const wordEl = document.createElement('span');
+      wordEl.className = 'canonical-word';
+
+      const top = document.createElement('span'); top.className = 'canonical-word__top';
+      for (const { slot, idx } of block.slots) {
+        const span = document.createElement('span');
+        const ornamentChars = (slot.expectedHarakat?.ornaments || [])
+          .map(n => CHAR_BY_NAME[n]).filter(Boolean).join('');
+        span.textContent = slot.letter + ornamentChars;
+        const classes = ['canonical-slot'];
+        if (slot.kind === 'silent') classes.push('canonical-slot--silent');
+        if (idx <= sealedUpTo) classes.push('canonical-slot--sealed');
+        else if (idx === matcher.state.slotIdx && slot.kind === 'sound') classes.push('canonical-slot--current');
+        else classes.push('canonical-slot--future');
+        span.className = classes.join(' ');
+        top.appendChild(span);
+      }
+      wordEl.appendChild(top);
+
+      // Meaning row beneath the word.
+      const meaning = meaningLookup ? meaningLookup(surah, ayah, block.wordIdx) : null;
+      const bot = document.createElement('span'); bot.className = 'canonical-word__meaning';
+      if (meaning && meaning.m) {
+        if (meaning.role) bot.classList.add('canonical-word__meaning--' + meaning.role);
+        bot.textContent = meaning.m;
+        if (meaning.tl) bot.setAttribute('title', meaning.tl + (meaning.root ? ` (root: ${meaning.root})` : ''));
+      } else {
+        bot.textContent = ' '; // keep height so words align
+      }
+      wordEl.appendChild(bot);
+
+      canonicalPane.appendChild(wordEl);
+    }
+
     userPane.innerHTML = '';
     for (const t of matcher.state.typed) {
       if (t.kind === 'wordEnd') { userPane.appendChild(document.createTextNode(' ')); continue; }

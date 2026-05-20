@@ -1,4 +1,6 @@
-const HARAKAT = [
+import { vibrateTap, vibrateWrong } from './feedback.js';
+
+const HARAKAT_BASE = [
   { name: 'fatha',        char: 'َ' },
   { name: 'damma',        char: 'ُ' },
   { name: 'kasra',        char: 'ِ' },
@@ -10,6 +12,16 @@ const HARAKAT = [
   { name: 'dagger_alif',  char: 'ٰ' },
   { name: 'maddah_above', char: 'ٓ' }
 ];
+
+// In Indo-Pak script the sukun is the small jazm (ۡ U+06E1), not the
+// circle ْ. Swap the displayed glyph (matcher accepts both).
+function harakatForScript(script) {
+  return HARAKAT_BASE.map(h => {
+    if (script === 'indopak' && h.name === 'sukun')        return { ...h, displayChar: 'ۡ' };
+    if (script === 'indopak' && h.name === 'maddah_above') return { ...h, displayChar: 'ۤ' };
+    return { ...h, displayChar: h.char };
+  });
+}
 
 const LETTER_TIPS = {
   'ئ': 'hamza on yeh — used mid-word (e.g. سَائِل)',
@@ -23,11 +35,12 @@ const LAYOUT = [
   ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
 ];
 
-export function mountKeypad(root, initialHandlers = {}) {
+export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } = {}) {
   root.innerHTML = '';
 
   // Mutable handler bag — setHandlers swaps these out without re-mounting.
   const handlers = { ...initialHandlers };
+  let currentScript = script;
 
   const harakatRow = document.createElement('div');
   harakatRow.className = 'keypad-harakat';
@@ -47,9 +60,10 @@ export function mountKeypad(root, initialHandlers = {}) {
     b.className = 'key ' + cls;
     b.textContent = label;
     if (fixedHandler) {
-      b.addEventListener('click', fixedHandler);
+      b.addEventListener('click', () => { vibrateTap(); fixedHandler(); });
     } else {
       b.addEventListener('click', () => {
+        vibrateTap();
         const fn = handlers[handlerName];
         if (fn) fn(ch);
       });
@@ -58,9 +72,16 @@ export function mountKeypad(root, initialHandlers = {}) {
     return b;
   }
 
-  for (const h of HARAKAT) {
-    harakatRow.appendChild(mkKey('ـ' + h.char, 'key--harakah', h.char, 'onHarakat'));
+  function buildHarakatRow() {
+    harakatRow.innerHTML = '';
+    for (const h of harakatForScript(currentScript)) {
+      // Pass the canonical char to the handler (matcher accepts aliases).
+      harakatRow.appendChild(
+        mkKey('ـ' + h.displayChar, 'key--harakah', h.char, 'onHarakat')
+      );
+    }
   }
+  buildHarakatRow();
 
   for (const row of LAYOUT) {
     const rowEl = document.createElement('div');
@@ -86,6 +107,7 @@ export function mountKeypad(root, initialHandlers = {}) {
   }
 
   function flashWrong(ch) {
+    vibrateWrong();
     const el = byChar.get(ch);
     if (!el) return;
     el.classList.add('shake');
@@ -96,8 +118,16 @@ export function mountKeypad(root, initialHandlers = {}) {
     Object.assign(handlers, next);
   }
 
+  function setScript(s) {
+    if (s === currentScript) return;
+    currentScript = s;
+    // Remove old harakat keys from byChar before rebuilding.
+    for (const h of HARAKAT_BASE) byChar.delete(h.char);
+    buildHarakatRow();
+  }
+
   return {
-    setHint, flashWrong, setHandlers,
+    setHint, flashWrong, setHandlers, setScript,
     destroy: () => { root.innerHTML = ''; }
   };
 }
