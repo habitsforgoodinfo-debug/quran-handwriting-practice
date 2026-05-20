@@ -1,6 +1,9 @@
 import { SURAHS, getSurah } from '../data/surah-metadata.js';
 
-export function mountHeader(root, { onChange, onOpenSettings, onScriptToggle, initial }) {
+export function mountHeader(root, {
+  onChange, onOpenSettings, onScriptToggle, onOpenBook, onOpenRapidFire,
+  initial
+}) {
   root.innerHTML = '';
   const surahSel = document.createElement('select');
   surahSel.className = 'surah';
@@ -12,10 +15,11 @@ export function mountHeader(root, { onChange, onOpenSettings, onScriptToggle, in
   }
   surahSel.value = String(initial.surah);
 
-  const fromInput = document.createElement('input');
-  fromInput.className = 'from'; fromInput.type = 'number'; fromInput.min = '1'; fromInput.value = String(initial.fromAyah);
-  const toInput = document.createElement('input');
-  toInput.className = 'to'; toInput.type = 'number'; toInput.min = '1'; toInput.value = String(initial.toAyah);
+  const ayahInput = document.createElement('input');
+  ayahInput.className = 'from';
+  ayahInput.type = 'number'; ayahInput.min = '1';
+  ayahInput.value = String(initial.fromAyah);
+  ayahInput.title = 'Start at ayah';
 
   const scriptBtn = document.createElement('button');
   scriptBtn.className = 'script-toggle';
@@ -27,27 +31,53 @@ export function mountHeader(root, { onChange, onOpenSettings, onScriptToggle, in
     if (onScriptToggle) onScriptToggle(next);
   });
 
+  const bookBtn = document.createElement('button');
+  bookBtn.className = 'my-book'; bookBtn.textContent = '📖'; bookBtn.title = 'My book';
+  bookBtn.addEventListener('click', () => onOpenBook && onOpenBook());
+
+  const rapidBtn = document.createElement('button');
+  rapidBtn.className = 'rapid-fire'; rapidBtn.textContent = '🎯'; rapidBtn.title = 'Rapid fire';
+  rapidBtn.addEventListener('click', () => onOpenRapidFire && onOpenRapidFire());
+
   const settingsBtn = document.createElement('button');
   settingsBtn.className = 'settings'; settingsBtn.textContent = '⚙'; settingsBtn.title = 'Settings';
+  settingsBtn.addEventListener('click', () => onOpenSettings());
 
-  root.append(surahSel, document.createTextNode(' From '), fromInput, document.createTextNode(' To '), toInput, scriptBtn, settingsBtn);
+  const statsEl = document.createElement('div');
+  statsEl.className = 'header-stats';
+  statsEl.textContent = '';
+
+  root.append(
+    surahSel,
+    document.createTextNode(' Ayah '),
+    ayahInput,
+    scriptBtn,
+    bookBtn, rapidBtn, settingsBtn,
+    statsEl
+  );
 
   function emit() {
     const surah = parseInt(surahSel.value, 10);
     const meta = getSurah(surah);
-    let from = Math.max(1, Math.min(parseInt(fromInput.value, 10) || 1, meta.verses));
-    let to   = Math.max(from, Math.min(parseInt(toInput.value, 10) || from, meta.verses));
-    fromInput.max = String(meta.verses);
-    toInput.max = String(meta.verses);
-    fromInput.value = String(from);
-    toInput.value = String(to);
-    onChange({ surah, fromAyah: from, toAyah: to });
+    let from = Math.max(1, Math.min(parseInt(ayahInput.value, 10) || 1, meta.verses));
+    ayahInput.max = String(meta.verses);
+    ayahInput.value = String(from);
+    onChange({ surah, fromAyah: from, toAyah: meta.verses });
   }
 
   surahSel.addEventListener('change', emit);
-  fromInput.addEventListener('change', emit);
-  toInput.addEventListener('change', emit);
-  settingsBtn.addEventListener('click', () => onOpenSettings());
+  ayahInput.addEventListener('change', emit);
+
+  function updateStats({ coverage, accuracy }) {
+    const cov = coverage
+      ? `${coverage.versesWritten} ayahs · ${coverage.percent}% of Quran`
+      : '';
+    const acc = (accuracy && accuracy.percent != null)
+      ? ` · ${accuracy.percent}% accuracy`
+      : '';
+    statsEl.textContent = cov + acc;
+  }
 
   emit();
+  return { updateStats };
 }

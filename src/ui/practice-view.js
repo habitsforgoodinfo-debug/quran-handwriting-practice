@@ -2,39 +2,90 @@ import { buildSkeleton } from '../verse/skeleton.js';
 import { LiveMatcher } from '../compare/live-matcher.js';
 import { mountHeatmapStrip } from './heatmap-strip.js';
 
-export function mountPracticeView(root, { onAllVersesComplete } = {}) {
+export function mountPracticeView(root, { onVerseComplete, onRangeEnd } = {}) {
   root.innerHTML = '';
   root.className = (root.className || '') + ' practice-view';
 
   const canonicalPane = document.createElement('div'); canonicalPane.className = 'canonical-pane';
   const divider       = document.createElement('div'); divider.className = 'pane-divider';
   const userPane      = document.createElement('div'); userPane.className = 'user-pane';
-  const heatmapRoot   = document.createElement('div');
+  const progressRoot  = document.createElement('div');
   const banner        = document.createElement('div'); banner.className = 'range-complete-banner';
   banner.style.display = 'none';
-  root.append(canonicalPane, divider, userPane, heatmapRoot, banner);
+  root.append(canonicalPane, divider, userPane, progressRoot, banner);
 
-  const heatmap = mountHeatmapStrip(heatmapRoot);
+  const progressStrip = mountHeatmapStrip(progressRoot);
 
-  let rawVerses = [];
-  let verseIdx = 0;
+  let surah = 0;
+  let surahName = '';
+  let ayah = 0;
+  let rawText = '';
   let skeleton = [];
   let matcher = null;
+  let versePerfect = true;
 
-  function loadVerse(idx) {
-    verseIdx = idx;
-    skeleton = buildSkeleton(rawVerses[idx], { isVerseStart: true });
+  function loadCurrentVerse() {
+    skeleton = buildSkeleton(rawText, { isVerseStart: true });
     matcher = new LiveMatcher(skeleton);
+    versePerfect = true;
     render();
+    updateProgress();
   }
 
-  function setVerses(verses) {
-    rawVerses = verses.slice();
+  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt }) {
+    surah = s; surahName = sn; ayah = a; rawText = rt;
     banner.style.display = 'none';
+    banner.innerHTML = '';
+    if (!rawText) {
+      canonicalPane.innerHTML = '';
+      userPane.innerHTML = '';
+      matcher = null; skeleton = [];
+      progressStrip.update(null);
+      return;
+    }
+    loadCurrentVerse();
+  }
+
+  function showRangeEnd(buttons = []) {
+    matcher = null;
     canonicalPane.innerHTML = '';
     userPane.innerHTML = '';
-    if (rawVerses.length === 0) { matcher = null; skeleton = []; return; }
-    loadVerse(0);
+    progressStrip.update(null);
+    banner.innerHTML = '';
+    const msg = document.createElement('div');
+    msg.className = 'banner-msg';
+    msg.textContent = '✓ surah complete — beautiful work';
+    banner.appendChild(msg);
+    const row = document.createElement('div'); row.className = 'banner-actions';
+    for (const b of buttons) {
+      const btn = document.createElement('button');
+      btn.className = 'banner-btn ' + (b.cls || '');
+      btn.textContent = b.label;
+      btn.addEventListener('click', b.onClick);
+      row.appendChild(btn);
+    }
+    banner.appendChild(row);
+    banner.style.display = '';
+  }
+
+  function getCurrentWordIdx() {
+    if (!matcher || !skeleton.length) return 0;
+    const idx = Math.min(matcher.state.slotIdx, skeleton.length - 1);
+    return skeleton[idx]?.wordIdx ?? 0;
+  }
+  function getTotalWords() {
+    if (!skeleton.length) return 0;
+    return Math.max(0, ...skeleton.map(s => (s.wordIdx ?? -1) + 1));
+  }
+
+  function updateProgress() {
+    if (!surahName) { progressStrip.update(null); return; }
+    progressStrip.update({
+      surahName, ayah,
+      wordIdx: getCurrentWordIdx(),
+      totalWords: getTotalWords(),
+      tip: null
+    });
   }
 
   function render() {
@@ -69,28 +120,57 @@ export function mountPracticeView(root, { onAllVersesComplete } = {}) {
     }
   }
 
-  function advance({ skipped = false } = {}) {
-    if (verseIdx + 1 < rawVerses.length) {
-      loadVerse(verseIdx + 1);
-    } else {
-      matcher = null;
-      banner.textContent = '✓ range complete — pick a new range above';
-      banner.style.display = '';
-      if (onAllVersesComplete) onAllVersesComplete();
-    }
-  }
-
   function applyKeyResult(result) {
     if (!matcher) return;
     render();
-    if (result?.complete) advance({ skipped: false });
+    updateProgress();
+    if (result?.complete) finishVerse();
   }
 
+  function finishVerse() {
+    canonicalPane.classList.add('canonical-pane--celebrate');
+    setTimeout(() => canonicalPane.classList.remove('canonical-pane--celebrate'), 700);
+    const completedSurah = surah, completedAyah = ayah, completedRaw = rawText;
+    const wasPerfect = versePerfect;
+    setTimeout(() => {
+      if (onVerseComplete) {
+        onVerseComplete({
+          surah: completedSurah,
+          ayah: completedAyah,
+          rawText: completedRaw,
+          perfect: wasPerfect
+        });
+      }
+    }, 600);
+  }
+
+  function hasInProgressInput() {
+    if (!matcher) return false;
+    return matcher.state.typed.some(t => t.kind === 'sound');
+  }
+
+  function noteWrongAttempt() { versePerfect = false; }
+
   return {
-    setVerses,
+    setVerse,
     applyKeyResult,
-    advance,
-    refreshHeatmap: (worst) => heatmap.update(worst),
-    getMatcher: () => matcher
+    noteWrongAttempt,
+    hasInProgressInput,
+    showRangeEnd,
+    // legacy alias kept for tests
+    refreshHeatmap: () => updateProgress(),
+    getMatcher: () => matcher,
+    getCurrentAyah: () => ayah,
+    getCurrentSurah: () => surah,
+    // legacy alias kept for tests
+    setVerses: (verses) => {
+      // best-effort backwards compat for older callers/tests
+      if (!verses || verses.length === 0) {
+        setVerse({ surah: 0, surahName: '', ayah: 0, rawText: '' });
+      } else {
+        setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: verses[0] });
+      }
+    },
+    advance: () => { /* iter-2 alias — no-op now; main owns advance */ }
   };
 }

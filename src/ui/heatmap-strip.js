@@ -1,32 +1,36 @@
-const HARAKAT_LABEL = {
-  shadda: 'shadda', fatha: 'fatha', kasra: 'kasra', damma: 'damma',
-  sukun: 'sukun',
-  tanween_fath: 'tanwīn-a', tanween_kasr: 'tanwīn-i', tanween_damm: 'tanwīn-u'
-};
+// This strip now surfaces practical context — current verse and word
+// progress, plus a short mnemonic for the next expected sound. The old
+// "weakest harakat" chip list was opaque to users.
+//
+// API kept stable for callers: mountHeatmapStrip(root) → { update }.
+// `update` now accepts an object payload; an empty/falsy payload clears.
 
 export function mountHeatmapStrip(root) {
   root.innerHTML = '';
-  root.className = (root.className || '') + ' heatmap-strip';
+  root.className = (root.className || '') + ' progress-strip';
 
-  function update(items) {
-    root.innerHTML = '';
-    if (!items || items.length === 0) {
-      const empty = document.createElement('span');
-      empty.className = 'heatmap-empty';
-      empty.textContent = 'build a baseline — start writing';
-      root.appendChild(empty);
+  const posEl = document.createElement('span');
+  posEl.className = 'progress-pos';
+  const tipEl = document.createElement('span');
+  tipEl.className = 'progress-tip';
+  root.append(posEl, tipEl);
+
+  function update(payload) {
+    if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      posEl.textContent = '';
+      tipEl.textContent = '';
       return;
     }
-    const label = document.createElement('span');
-    label.className = 'heatmap-label';
-    label.textContent = 'weakest:';
-    root.appendChild(label);
-    for (const it of items) {
-      const chip = document.createElement('span');
-      chip.className = 'heatmap-chip';
-      chip.textContent = it.kind === 'letter' ? it.value : (HARAKAT_LABEL[it.value] || it.value);
-      root.appendChild(chip);
+    const { surahName, ayah, wordIdx, totalWords, tip } = payload;
+    if (!surahName) {
+      posEl.textContent = '';
+      tipEl.textContent = '';
+      return;
     }
+    posEl.textContent = `${surahName} · ${ayah} · word ${
+      Math.min(wordIdx + 1, totalWords)
+    } of ${totalWords}`;
+    tipEl.textContent = tip ? ` · ${tip}` : '';
   }
 
   return { update };

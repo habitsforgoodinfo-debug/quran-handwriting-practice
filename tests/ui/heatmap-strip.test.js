@@ -3,21 +3,29 @@ import assert from 'node:assert/strict';
 import { makeDocument } from '../_helpers/dom-stub.js';
 import { mountHeatmapStrip } from '../../src/ui/heatmap-strip.js';
 
-test('heatmap-strip: renders one chip per worst item', () => {
+test('progress-strip: shows surah/ayah/word position', () => {
   globalThis.document = makeDocument();
   const root = document.createElement('div');
   const api = mountHeatmapStrip(root);
-  api.update([
-    { kind: 'diacritic', value: 'shadda', count: 9 },
-    { kind: 'letter',    value: 'ع',     count: 4 }
-  ]);
-  assert.equal(root.querySelectorAll('.heatmap-chip').length, 2);
+  api.update({ surahName: 'Al-Fatiha', ayah: 2, wordIdx: 1, totalWords: 4 });
+  assert.ok(root.textContent.includes('Al-Fatiha'));
+  assert.ok(root.textContent.includes('word 2 of 4'));
 });
 
-test('heatmap-strip: shows fallback when empty', () => {
+test('progress-strip: null payload clears', () => {
   globalThis.document = makeDocument();
   const root = document.createElement('div');
   const api = mountHeatmapStrip(root);
-  api.update([]);
-  assert.ok(root.textContent.includes('build a baseline'));
+  api.update({ surahName: 'Test', ayah: 1, wordIdx: 0, totalWords: 1 });
+  api.update(null);
+  assert.equal(root.textContent.trim(), '');
+});
+
+test('progress-strip: legacy array input is treated as clear', () => {
+  globalThis.document = makeDocument();
+  const root = document.createElement('div');
+  const api = mountHeatmapStrip(root);
+  api.update({ surahName: 'Test', ayah: 1, wordIdx: 0, totalWords: 1 });
+  api.update([{ kind: 'letter', value: 'ع', count: 5 }]);
+  assert.equal(root.textContent.trim(), '');
 });

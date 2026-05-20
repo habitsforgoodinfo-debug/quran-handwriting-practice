@@ -1,18 +1,24 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
+import { getSurah } from './data/surah-metadata.js';
 import { mountHeader } from './ui/header.js';
 import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
+import { mountMyBook } from './ui/my-book.js';
+import { mountRapidFire } from './ui/rapid-fire.js';
 import { getSettings, updateSettings } from './store/settings.js';
-import { recordError, getWorst, resetStats } from './store/stats.js';
+import {
+  recordError, recordAttempt, getAccuracy, getCoverage,
+  markVerseComplete, resetStats
+} from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
 
 const state = {
-  surah: 1, fromAyah: 1, toAyah: 1,
+  surah: 1, ayah: 1, surahMax: 7, surahName: 'Al-Fatiha',
   settings: null
 };
 const player = new AyahPlayer();
-let practiceApi, keypadApi;
+let practiceApi, keypadApi, headerApi;
 
 async function init() {
   if ('serviceWorker' in navigator) {
@@ -25,24 +31,33 @@ async function init() {
   const practiceEl = document.getElementById('verse-display');
   const keypadEl   = document.getElementById('keypad-view');
 
-  practiceApi = mountPracticeView(practiceEl, { onAllVersesComplete: () => {} });
+  practiceApi = mountPracticeView(practiceEl, {
+    onVerseComplete: handleVerseComplete
+  });
 
   keypadApi = mountKeypad(keypadEl, {
     onLetter:    handleLetter,
     onHarakat:   handleHarakat,
     onBackspace: handleBackspace,
-    onPlayAudio: playCurrentVerse,
+    onPlayAudio: playCurrentAyah,
     onNextAyah:  handleNextAyah
   });
 
-  mountHeader(headerEl, {
-    initial: { surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah, script: state.settings.script },
+  headerApi = mountHeader(headerEl, {
+    initial: { surah: state.surah, fromAyah: state.ayah, toAyah: state.ayah, script: state.settings.script },
     onChange: handleRangeChange,
     onOpenSettings: openSettings,
-    onScriptToggle: handleScriptToggle
+    onScriptToggle: handleScriptToggle,
+    onOpenBook: () => mountMyBook(document.body),
+    onOpenRapidFire: () => mountRapidFire(document.body, { reciter: state.settings.reciter })
   });
 
-  handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah });
+  refreshHeaderStats();
+}
+
+async function refreshHeaderStats() {
+  const [coverage, accuracy] = await Promise.all([getCoverage(), getAccuracy()]);
+  headerApi.updateStats({ coverage, accuracy });
 }
 
 function refreshHints() {
@@ -56,9 +71,9 @@ function refreshHints() {
     keypadApi.setHint(hint);
     return;
   }
-  // policy === 'auto'
+  // policy === 'auto' — show hint only after 2 wrong attempts on current slot
   const rc = m.state.rejectCount;
-  if (rc === 0) {
+  if (rc < 2) {
     keypadApi.setHint({});
     return;
   }
@@ -66,10 +81,6 @@ function refreshHints() {
   if (m.state.awaiting === 'letter' && hint.letter) out.letter = hint.letter;
   if (m.state.awaiting === 'harakat' && hint.harakat) out.harakat = hint.harakat;
   keypadApi.setHint(out);
-}
-
-async function refreshHeatmap() {
-  practiceApi.refreshHeatmap(await getWorst(3));
 }
 
 function handleLetter(ch) {
@@ -80,12 +91,14 @@ function handleLetter(ch) {
     keypadApi.flashWrong(ch);
     const expected = m.skeleton[m.state.slotIdx]?.letter || ch;
     recordError({ kind: 'letter', value: expected });
-    refreshHeatmap();
+    recordAttempt({ correct: false });
+    practiceApi.noteWrongAttempt();
+    refreshHints();
     return;
   }
+  recordAttempt({ correct: true });
   practiceApi.applyKeyResult(r);
   refreshHints();
-  if (r.complete) refreshHeatmap();
 }
 
 function handleHarakat(ch) {
@@ -95,12 +108,14 @@ function handleHarakat(ch) {
   if (!r.accepted) {
     keypadApi.flashWrong(ch);
     recordError({ kind: 'diacritic', value: ch });
-    refreshHeatmap();
+    recordAttempt({ correct: false });
+    practiceApi.noteWrongAttempt();
+    refreshHints();
     return;
   }
+  recordAttempt({ correct: true });
   practiceApi.applyKeyResult(r);
   refreshHints();
-  if (r.complete) refreshHeatmap();
 }
 
 function handleBackspace() {
@@ -112,36 +127,79 @@ function handleBackspace() {
 }
 
 function handleNextAyah() {
-  practiceApi.advance({ skipped: true });
+  if (practiceApi.hasInProgressInput()) {
+    const ok = window.confirm('Your writing for this ayah is incomplete. Skip to the next one?');
+    if (!ok) return;
+  }
+  advanceToNextAyah({ skipped: true });
+}
+
+async function handleVerseComplete({ surah, ayah, rawText, perfect }) {
+  await markVerseComplete({ surah, ayah, rawText, perfect });
+  refreshHeaderStats();
+  advanceToNextAyah({ skipped: false });
+}
+
+function advanceToNextAyah() {
+  const nextAyah = state.ayah + 1;
+  if (nextAyah > state.surahMax) {
+    practiceApi.showRangeEnd([
+      { label: 'Practice this surah again', cls: 'primary',
+        onClick: () => loadCurrentSurahFromStart() },
+      { label: 'Pick another surah', cls: 'secondary',
+        onClick: () => {
+          const surahSel = document.querySelector('#header select.surah');
+          if (surahSel) { surahSel.focus(); surahSel.scrollIntoView({ behavior: 'smooth' }); }
+        } }
+    ]);
+    return;
+  }
+  state.ayah = nextAyah;
+  loadCurrentVerse();
+}
+
+function loadCurrentSurahFromStart() {
+  state.ayah = 1;
+  loadCurrentVerse();
+}
+
+function loadCurrentVerse() {
+  const rawText = getVerse(state.surah, state.ayah);
+  practiceApi.setVerse({
+    surah: state.surah,
+    surahName: state.surahName,
+    ayah: state.ayah,
+    rawText
+  });
   refreshHints();
 }
 
 async function handleScriptToggle(nextScript) {
   state.settings = await updateSettings({ script: nextScript });
   await loadQuran(nextScript);
-  handleRangeChange({ surah: state.surah, fromAyah: state.fromAyah, toAyah: state.toAyah });
+  loadCurrentVerse();
 }
 
-function handleRangeChange({ surah, fromAyah, toAyah }) {
-  state.surah = surah; state.fromAyah = fromAyah; state.toAyah = toAyah;
-  const verses = [];
-  for (let a = fromAyah; a <= toAyah; a++) verses.push(getVerse(surah, a));
-  practiceApi.setVerses(verses);
-  refreshHints();
-  refreshHeatmap();
+function handleRangeChange({ surah, fromAyah }) {
+  state.surah = surah;
+  state.ayah = fromAyah;
+  const meta = getSurah(surah);
+  state.surahMax = meta?.verses || 1;
+  state.surahName = meta?.name_en || `Surah ${surah}`;
+  loadCurrentVerse();
 }
 
 function openSettings() {
   mountSettingsModal(document.body, {
     settings: state.settings,
     onChange: async (patch) => { state.settings = await updateSettings(patch); refreshHints(); },
-    onResetStats: async () => { await resetStats(); refreshHeatmap(); }
+    onResetStats: async () => { await resetStats(); refreshHeaderStats(); }
   });
 }
 
-function playCurrentVerse() {
-  const url = buildAyahUrl(state.settings.reciter, state.surah, state.fromAyah);
-  player.play(url).catch(() => showRetryToast('Could not load audio.', playCurrentVerse));
+function playCurrentAyah() {
+  const url = buildAyahUrl(state.settings.reciter, state.surah, state.ayah);
+  player.play(url).catch(() => showRetryToast('Could not load audio.', playCurrentAyah));
 }
 
 function showRetryToast(message, onRetry) {

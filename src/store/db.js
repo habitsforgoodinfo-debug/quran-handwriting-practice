@@ -1,5 +1,5 @@
 const DB_NAME = 'qhp';
-const DB_VERSION = 1;
+const DB_VERSION = 2;
 let dbPromise = null;
 
 export function openDb() {
@@ -11,6 +11,7 @@ export function openDb() {
       if (!db.objectStoreNames.contains('kv')) db.createObjectStore('kv');
       if (!db.objectStoreNames.contains('letterErrors')) db.createObjectStore('letterErrors');
       if (!db.objectStoreNames.contains('diacriticErrors')) db.createObjectStore('diacriticErrors');
+      if (!db.objectStoreNames.contains('completedVerses')) db.createObjectStore('completedVerses');
     };
     req.onsuccess = () => resolve(req.result);
     req.onerror = () => reject(req.error);
@@ -69,6 +70,41 @@ export async function counterAll(storeName) {
       if (c) { out[c.key] = c.value; c.continue(); } else { res(out); }
     };
     cur.onerror = () => rej(cur.error);
+  });
+}
+
+export async function verseStorePut(key, value) {
+  const db = await openDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('completedVerses', 'readwrite');
+    tx.objectStore('completedVerses').put(value, key);
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
+  });
+}
+
+export async function verseStoreGetAll() {
+  const db = await openDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('completedVerses', 'readonly');
+    const store = tx.objectStore('completedVerses');
+    const out = [];
+    const cur = store.openCursor();
+    cur.onsuccess = (e) => {
+      const c = e.target.result;
+      if (c) { out.push({ key: c.key, value: c.value }); c.continue(); } else { res(out); }
+    };
+    cur.onerror = () => rej(cur.error);
+  });
+}
+
+export async function verseStoreClear() {
+  const db = await openDb();
+  return new Promise((res, rej) => {
+    const tx = db.transaction('completedVerses', 'readwrite');
+    tx.objectStore('completedVerses').clear();
+    tx.oncomplete = () => res();
+    tx.onerror = () => rej(tx.error);
   });
 }
 

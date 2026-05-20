@@ -4,8 +4,10 @@ import { recordError, getStats, resetStats, getWorst } from '../../src/store/sta
 
 function makeMockDb() {
   const stores = { letterErrors: new Map(), diacriticErrors: new Map() };
+  const kv = new Map();
+  const verseStore = new Map();
   return {
-    stores,
+    stores, kv, verseStore,
     counterIncrement: async (storeName, key) => {
       const m = stores[storeName];
       m.set(key, (m.get(key) || 0) + 1);
@@ -15,7 +17,12 @@ function makeMockDb() {
       for (const [k, v] of stores[storeName]) out[k] = v;
       return out;
     },
-    counterClear: async (storeName) => { stores[storeName].clear(); }
+    counterClear: async (storeName) => { stores[storeName].clear(); },
+    kvGet: async (k) => kv.get(k),
+    kvPut: async (k, v) => { kv.set(k, v); },
+    verseStorePut: async (k, v) => { verseStore.set(k, v); },
+    verseStoreGetAll: async () => [...verseStore.entries()].map(([key, value]) => ({ key, value })),
+    verseStoreClear: async () => { verseStore.clear(); }
   };
 }
 
