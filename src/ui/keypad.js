@@ -24,15 +24,22 @@ function harakatForScript(script) {
 }
 
 const LETTER_TIPS = {
-  'ء': 'standalone hamza'
+  'ء': 'standalone hamza',
+  'ئ': 'hamza on yeh (mid-word, e.g. سَائِل)',
+  'ؤ': 'hamza on waw (mid-word, e.g. مُؤْمِن)',
+  'د': 'long-press for ذ'
 };
 
-// 28 Arabic letters in alphabetical-ish, learnable grouping.
+// Standard Google / iOS Arabic mobile keyboard arrangement.
+// د is a long-press source for ذ (matches Google Gboard behavior).
 const LAYOUT = [
-  ['ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز'],
-  ['س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك'],
-  ['ل','م','ن','ه','و','ي','ة','ى','ء','لا']
+  ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د'],
+  ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
+  ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
 ];
+
+// Letters that long-press into a different letter.
+const LETTER_LONGPRESS = { 'د': 'ذ' };
 
 const LONG_PRESS_MS = 450;
 
@@ -60,11 +67,38 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
     b.className = 'key key--letter';
     b.textContent = ch;
     if (LETTER_TIPS[ch]) b.setAttribute('title', LETTER_TIPS[ch]);
+    byChar.set(ch, b);
+
+    const longCh = LETTER_LONGPRESS[ch];
+    if (!longCh) {
+      b.addEventListener('click', () => {
+        vibrateTap();
+        handlers.onLetter && handlers.onLetter(ch);
+      });
+      return b;
+    }
+
+    // Long-press: hold to fire the alternate letter; click fires short.
+    byChar.set(longCh, b);
+    let timer = null, longFired = false;
+    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
+    b.addEventListener('pointerdown', () => {
+      longFired = false;
+      timer = setTimeout(() => {
+        longFired = true;
+        b.classList.add('key--long-fired');
+        vibrateTap();
+        handlers.onLetter && handlers.onLetter(longCh);
+      }, LONG_PRESS_MS);
+    });
+    b.addEventListener('pointerup', () => { cancel(); setTimeout(() => b.classList.remove('key--long-fired'), 150); });
+    b.addEventListener('pointerleave', () => { cancel(); b.classList.remove('key--long-fired'); });
+    b.addEventListener('pointercancel', () => { cancel(); b.classList.remove('key--long-fired'); });
     b.addEventListener('click', () => {
+      if (longFired) { longFired = false; return; }
       vibrateTap();
       handlers.onLetter && handlers.onLetter(ch);
     });
-    byChar.set(ch, b);
     return b;
   }
 
@@ -80,7 +114,11 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
     const b = document.createElement('button');
     b.className = 'key key--harakah';
     b.textContent = 'ـ' + spec.displayChar;
+    // Register under BOTH the displayed and canonical char so setHint()
+    // can find the key whether the matcher returns 'ْ' or the Indo-Pak
+    // alias 'ۡ'. Same for madda variants.
     byChar.set(spec.displayChar, b);
+    if (spec.char !== spec.displayChar) byChar.set(spec.char, b);
 
     if (!spec.longChar) {
       b.addEventListener('click', () => {
