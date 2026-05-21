@@ -9,7 +9,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   script: 'indopak',
   hintPolicy: 'auto',
   strict: false,
-  hideIntro: false
+  hideIntro: false,
+  autoPlayOnAyahLoad: false
 });
 
 function migrate(stored) {

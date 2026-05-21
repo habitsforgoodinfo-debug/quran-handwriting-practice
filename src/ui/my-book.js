@@ -64,7 +64,7 @@ export async function mountMyBook(root) {
     for (const v of list) {
       if (v.skipped) {
         const skip = document.createElement('span');
-        skip.className = 'my-book__skip';
+        skip.className = 'my-book__skip my-book__skip--inline';
         skip.textContent = ` ⋯(${v.ayah}) `;
         skip.title = `Ayah ${v.ayah} — not yet completed`;
         flow.appendChild(skip);

@@ -53,7 +53,8 @@ async function init() {
     onScriptToggle: handleScriptToggle,
     onOpenBook: () => mountMyBook(document.body),
     onOpenRapidFire: openRapidFire,
-    onPrevAyah: handlePrevAyah
+    onPrevAyah: handlePrevAyah,
+    onNextReviewAyah: handleNextReviewAyah
   });
 
   refreshHeaderStats();
@@ -136,33 +137,67 @@ function handleBackspace() {
   refreshHints();
 }
 
+// Review navigation. When user presses ← in the header, we step back
+// through the list of completed verses. Each subsequent ← goes further
+// back. → goes forward, ending at the live ayah (state.surah, state.ayah).
+let reviewPointer = null; // { surah, ayah } currently shown in review mode
+
 async function handlePrevAyah() {
-  // If we're already in review, navigate further back; otherwise enter
-  // review mode showing the previously-completed verse.
   const completed = await getCompletedVerses();
-  // Find the most recent completed entry strictly before current (surah, ayah).
-  const candidates = completed
-    .filter(v => !v.skipped &&
-      (v.surah < state.surah || (v.surah === state.surah && v.ayah < state.ayah)));
-  if (candidates.length === 0) {
-    // Nothing to show yet — gentle nudge.
+  const sorted = completed.filter(v => !v.skipped)
+    .sort((a, b) => a.surah - b.surah || a.ayah - b.ayah);
+  if (sorted.length === 0) {
     showRetryToast('No previously-written ayahs yet.', () => {});
     return;
   }
-  const last = candidates[candidates.length - 1];
-  practiceApi.showReview(last);
-  // Reuse next-ayah handler to exit review and return to live verse.
+  // Find the verse strictly before the currently-displayed (review or live).
+  const cur = reviewPointer || { surah: state.surah, ayah: state.ayah };
+  const candidates = sorted.filter(v =>
+    v.surah < cur.surah || (v.surah === cur.surah && v.ayah < cur.ayah));
+  if (candidates.length === 0) {
+    showRetryToast('You are at the earliest written ayah.', () => {});
+    return;
+  }
+  const target = candidates[candidates.length - 1];
+  reviewPointer = { surah: target.surah, ayah: target.ayah };
+  enterReview(target);
+}
+
+async function handleNextReviewAyah() {
+  if (!reviewPointer) return;
+  const completed = await getCompletedVerses();
+  const sorted = completed.filter(v => !v.skipped)
+    .sort((a, b) => a.surah - b.surah || a.ayah - b.ayah);
+  const liveCur = { surah: state.surah, ayah: state.ayah };
+  const ahead = sorted.filter(v =>
+    (v.surah > reviewPointer.surah || (v.surah === reviewPointer.surah && v.ayah > reviewPointer.ayah)) &&
+    (v.surah < liveCur.surah || (v.surah === liveCur.surah && v.ayah < liveCur.ayah)));
+  if (ahead.length > 0) {
+    const target = ahead[0];
+    reviewPointer = { surah: target.surah, ayah: target.ayah };
+    enterReview(target);
+    return;
+  }
+  // No further review entry; back to live.
+  exitReview();
+}
+
+function enterReview(verse) {
+  practiceApi.showReview(verse);
+  headerApi.setReviewMode(true);
   keypadApi.setHandlers({
     onLetter: () => {},
     onHarakat: () => {},
     onBackspace: exitReview,
-    onPlayAudio: () => playAyah(last.surah, last.ayah),
+    onPlayAudio: () => playAyah(verse.surah, verse.ayah),
     onNextAyah: exitReview
   });
 }
 
 function exitReview() {
+  reviewPointer = null;
   practiceApi.exitReview();
+  headerApi.setReviewMode(false);
   keypadApi.setHandlers({
     onLetter:    handleLetter,
     onHarakat:   handleHarakat,
@@ -222,7 +257,7 @@ function loadCurrentSurahFromStart() {
   loadCurrentVerse({ slide: true });
 }
 
-function loadCurrentVerse({ slide = false } = {}) {
+function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
   const rawText = getVerse(state.surah, state.ayah);
   practiceApi.setVerse({
     surah: state.surah,
@@ -232,6 +267,9 @@ function loadCurrentVerse({ slide = false } = {}) {
     slide
   });
   refreshHints();
+  if (autoPlay || state.settings.autoPlayOnAyahLoad) {
+    setTimeout(() => playAyah(state.surah, state.ayah), 350);
+  }
 }
 
 async function handleScriptToggle(nextScript) {

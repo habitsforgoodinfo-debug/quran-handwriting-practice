@@ -1,20 +1,20 @@
 import { vibrateTap, vibrateWrong } from './feedback.js';
 
+// Each harakat key: short tap fires `char`; long-press (where defined)
+// fires `longChar` — the elongated form (Indo-Pak long-vowel marks).
 const HARAKAT_BASE = [
-  { name: 'fatha',        char: 'َ' },
-  { name: 'damma',        char: 'ُ' },
-  { name: 'kasra',        char: 'ِ' },
-  { name: 'sukun',        char: 'ْ' },
-  { name: 'shadda',       char: 'ّ' },
-  { name: 'tanween_fath', char: 'ً' },
-  { name: 'tanween_damm', char: 'ٌ' },
-  { name: 'tanween_kasr', char: 'ٍ' },
-  { name: 'dagger_alif',  char: 'ٰ' },
-  { name: 'maddah_above', char: 'ٓ' }
+  { name: 'fatha',        char: 'َ',  longChar: 'ٰ' },   // long-press → dagger alif (long fatha)
+  { name: 'damma',        char: 'ُ',  longChar: 'ٗ' },   // long-press → inverted damma (long damma)
+  { name: 'kasra',        char: 'ِ',  longChar: 'ٖ' },   // long-press → subscript alef (long kasra)
+  { name: 'sukun',        char: 'ْ'  },
+  { name: 'shadda',       char: 'ّ'  },
+  { name: 'tanween_fath', char: 'ً'  },
+  { name: 'tanween_damm', char: 'ٌ'  },
+  { name: 'tanween_kasr', char: 'ٍ'  },
+  { name: 'dagger_alif',  char: 'ٰ'  },
+  { name: 'maddah_above', char: 'ٓ',  longChar: 'ۤ' }    // long-press → Indo-Pak high madda (6-count)
 ];
 
-// In Indo-Pak script the sukun is the small jazm (ۡ U+06E1), not the
-// circle ْ. Swap the displayed glyph (matcher accepts both).
 function harakatForScript(script) {
   return HARAKAT_BASE.map(h => {
     if (script === 'indopak' && h.name === 'sukun')        return { ...h, displayChar: 'ۡ' };
@@ -24,21 +24,21 @@ function harakatForScript(script) {
 }
 
 const LETTER_TIPS = {
-  'ئ': 'hamza on yeh — used mid-word (e.g. سَائِل)',
-  'ؤ': 'hamza on waw — used mid-word (e.g. مُؤْمِن)',
   'ء': 'standalone hamza'
 };
 
+// 28 Arabic letters in alphabetical-ish, learnable grouping.
 const LAYOUT = [
-  ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د'],
-  ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
-  ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
+  ['ا','ب','ت','ث','ج','ح','خ','د','ذ','ر','ز'],
+  ['س','ش','ص','ض','ط','ظ','ع','غ','ف','ق','ك'],
+  ['ل','م','ن','ه','و','ي','ة','ى','ء','لا']
 ];
+
+const LONG_PRESS_MS = 450;
 
 export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } = {}) {
   root.innerHTML = '';
 
-  // Mutable handler bag — setHandlers swaps these out without re-mounting.
   const handlers = { ...initialHandlers };
   let currentScript = script;
 
@@ -55,32 +55,73 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
 
   const byChar = new Map();
 
-  function mkKey(label, cls, ch, handlerName, fixedHandler) {
+  function mkLetterKey(ch) {
+    const b = document.createElement('button');
+    b.className = 'key key--letter';
+    b.textContent = ch;
+    if (LETTER_TIPS[ch]) b.setAttribute('title', LETTER_TIPS[ch]);
+    b.addEventListener('click', () => {
+      vibrateTap();
+      handlers.onLetter && handlers.onLetter(ch);
+    });
+    byChar.set(ch, b);
+    return b;
+  }
+
+  function mkActionKey(label, cls, fixedHandler) {
     const b = document.createElement('button');
     b.className = 'key ' + cls;
     b.textContent = label;
-    if (fixedHandler) {
-      b.addEventListener('click', () => { vibrateTap(); fixedHandler(); });
-    } else {
+    b.addEventListener('click', () => { vibrateTap(); fixedHandler(); });
+    return b;
+  }
+
+  function mkHarakatKey(spec) {
+    const b = document.createElement('button');
+    b.className = 'key key--harakah';
+    b.textContent = 'ـ' + spec.displayChar;
+    byChar.set(spec.displayChar, b);
+
+    if (!spec.longChar) {
       b.addEventListener('click', () => {
         vibrateTap();
-        const fn = handlers[handlerName];
-        if (fn) fn(ch);
+        handlers.onHarakat && handlers.onHarakat(spec.displayChar);
       });
+      return b;
     }
-    if (ch) byChar.set(ch, b);
+
+    // Long-press capable key. Click always fires the short form; a
+    // pointerdown held > LONG_PRESS_MS fires the long form and swallows
+    // the click that would otherwise follow.
+    let timer = null, longFired = false;
+    const cancelTimer = () => {
+      if (timer) { clearTimeout(timer); timer = null; }
+      b.classList.remove('key--long-fired');
+    };
+    b.addEventListener('pointerdown', () => {
+      longFired = false;
+      timer = setTimeout(() => {
+        longFired = true;
+        b.classList.add('key--long-fired');
+        vibrateTap();
+        handlers.onHarakat && handlers.onHarakat(spec.longChar);
+      }, LONG_PRESS_MS);
+    });
+    b.addEventListener('pointerup',    cancelTimer);
+    b.addEventListener('pointerleave', cancelTimer);
+    b.addEventListener('pointercancel', cancelTimer);
+    b.addEventListener('click', () => {
+      if (longFired) { longFired = false; return; }
+      vibrateTap();
+      handlers.onHarakat && handlers.onHarakat(spec.displayChar);
+    });
     return b;
   }
 
   function buildHarakatRow() {
     harakatRow.innerHTML = '';
     for (const h of harakatForScript(currentScript)) {
-      // Pass the DISPLAYED char to the handler so the user-pane render
-      // shows the same glyph the user tapped (e.g. ۡ jazm in Indo-Pak).
-      // Matcher accepts either codepoint.
-      harakatRow.appendChild(
-        mkKey('ـ' + h.displayChar, 'key--harakah', h.displayChar, 'onHarakat')
-      );
+      harakatRow.appendChild(mkHarakatKey(h));
     }
   }
   buildHarakatRow();
@@ -88,18 +129,14 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
   for (const row of LAYOUT) {
     const rowEl = document.createElement('div');
     rowEl.className = 'keypad-row';
-    for (const ch of row) {
-      const key = mkKey(ch, 'key--letter', ch, 'onLetter');
-      if (LETTER_TIPS[ch]) key.setAttribute('title', LETTER_TIPS[ch]);
-      rowEl.appendChild(key);
-    }
+    for (const ch of row) rowEl.appendChild(mkLetterKey(ch));
     lettersWrap.appendChild(rowEl);
   }
 
   actionRow.append(
-    mkKey('⌫', 'key--action back', null, null, () => handlers.onBackspace && handlers.onBackspace()),
-    mkKey('→ next ayah', 'key--action next', null, null, () => handlers.onNextAyah && handlers.onNextAyah()),
-    mkKey('▶ audio', 'key--action audio', null, null, () => handlers.onPlayAudio && handlers.onPlayAudio())
+    mkActionKey('⌫', 'key--action back', () => handlers.onBackspace && handlers.onBackspace()),
+    mkActionKey('→ next ayah', 'key--action next', () => handlers.onNextAyah && handlers.onNextAyah()),
+    mkActionKey('▶ audio', 'key--action audio', () => handlers.onPlayAudio && handlers.onPlayAudio())
   );
 
   function setHint({ letter, harakat } = {}) {
@@ -116,15 +153,12 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
     setTimeout(() => el.classList.remove('shake'), 250);
   }
 
-  function setHandlers(next) {
-    Object.assign(handlers, next);
-  }
-
+  function setHandlers(next) { Object.assign(handlers, next); }
   function setScript(s) {
     if (s === currentScript) return;
     currentScript = s;
-    // Remove old harakat keys from byChar before rebuilding.
     for (const h of HARAKAT_BASE) byChar.delete(h.char);
+    byChar.delete('ۡ'); byChar.delete('ۤ');
     buildHarakatRow();
   }
 

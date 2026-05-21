@@ -2,7 +2,7 @@ import { SURAHS, getSurah } from '../data/surah-metadata.js';
 
 export function mountHeader(root, {
   onChange, onOpenSettings, onScriptToggle, onOpenBook, onOpenRapidFire,
-  onPrevAyah,
+  onPrevAyah, onNextReviewAyah,
   initial
 }) {
   root.innerHTML = '';
@@ -37,8 +37,8 @@ export function mountHeader(root, {
   bookBtn.addEventListener('click', () => onOpenBook && onOpenBook());
 
   const rapidBtn = document.createElement('button');
-  rapidBtn.className = 'rapid-fire'; rapidBtn.textContent = '🎧';
-  rapidBtn.title = 'Listen & write (audio dictation drill)';
+  rapidBtn.className = 'rapid-fire'; rapidBtn.textContent = '📝';
+  rapidBtn.title = 'Pop quiz — listen & write a verse you previously struggled with';
   rapidBtn.addEventListener('click', () => onOpenRapidFire && onOpenRapidFire());
 
   const settingsBtn = document.createElement('button');
@@ -50,6 +50,12 @@ export function mountHeader(root, {
   prevBtn.title = 'Review previous ayah';
   prevBtn.addEventListener('click', () => onPrevAyah && onPrevAyah());
 
+  const nextReviewBtn = document.createElement('button');
+  nextReviewBtn.className = 'next-review-ayah'; nextReviewBtn.textContent = '→';
+  nextReviewBtn.title = 'Forward (return to your live ayah)';
+  nextReviewBtn.style.display = 'none';
+  nextReviewBtn.addEventListener('click', () => onNextReviewAyah && onNextReviewAyah());
+
   const statsEl = document.createElement('div');
   statsEl.className = 'header-stats';
   statsEl.textContent = '';
@@ -58,11 +64,15 @@ export function mountHeader(root, {
     surahSel,
     document.createTextNode(' Ayah '),
     ayahInput,
-    prevBtn,
+    prevBtn, nextReviewBtn,
     scriptBtn,
     bookBtn, rapidBtn, settingsBtn,
     statsEl
   );
+
+  function setReviewMode(on) {
+    nextReviewBtn.style.display = on ? '' : 'none';
+  }
 
   function emit() {
     const surah = parseInt(surahSel.value, 10);
@@ -87,5 +97,5 @@ export function mountHeader(root, {
   }
 
   emit();
-  return { updateStats };
+  return { updateStats, setReviewMode };
 }

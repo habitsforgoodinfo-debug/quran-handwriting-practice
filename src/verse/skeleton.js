@@ -5,7 +5,9 @@ const GATED_DIACRITICS = new Set([
   'fatha','kasra','damma','sukun',
   'tanween_fath','tanween_kasr','tanween_damm',
   'shadda',
-  'dagger_alif',
+  'dagger_alif',          // long fatha (ٰ)
+  'subscript_alef',       // long kasra (ٖ U+0656, Indo-Pak)
+  'inverted_damma',       // long damma (ٗ U+0657, Indo-Pak)
   'maddah_above',
   'high_madda'
 ]);
@@ -14,8 +16,10 @@ const GATED_DIACRITICS = new Set([
 // counterpart, so the matcher should require the canonical name (and accept
 // either codepoint as input — handled in live-matcher.js).
 const DIACRITIC_ALIASES = {
-  high_dotless_head_of_khah: 'sukun', // U+06E1 (Indo-Pak sukun)
-  high_madda: 'maddah_above'          // U+06E4 (Indo-Pak madda)
+  high_dotless_head_of_khah: 'sukun',       // U+06E1 (Indo-Pak sukun)
+  high_madda:                'maddah_above',// U+06E4 (Indo-Pak madda)
+  mark_0656:                 'subscript_alef',
+  mark_0657:                 'inverted_damma'
 };
 
 // Pause / stop annotations a renderer should show after the letter even

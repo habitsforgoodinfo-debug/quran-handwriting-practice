@@ -3,21 +3,21 @@ import { lettersEquivalent } from './tolerance.js';
 const HARAKAT_CHAR = {
   fatha: 'َ', kasra: 'ِ', damma: 'ُ', sukun: 'ْ', shadda: 'ّ',
   tanween_fath: 'ً', tanween_kasr: 'ٍ', tanween_damm: 'ٌ',
-  dagger_alif: 'ٰ', maddah_above: 'ٓ'
+  dagger_alif: 'ٰ', maddah_above: 'ٓ',
+  subscript_alef: 'ٖ', inverted_damma: 'ٗ'
 };
 const HARAKAT_NAME = Object.fromEntries(
   Object.entries(HARAKAT_CHAR).map(([n, c]) => [c, n])
 );
-// U+06E4 (Indo-Pak high madda) also represents 'maddah_above' for input.
-HARAKAT_NAME['ۤ'] = 'maddah_above';
-// U+06E1 (Indo-Pak sukun-substitute, dotless head of khah) → sukun.
-HARAKAT_NAME['ۡ'] = 'sukun';
+HARAKAT_NAME['ۤ'] = 'maddah_above';     // Indo-Pak high madda
+HARAKAT_NAME['ۡ'] = 'sukun';            // Indo-Pak sukun (jazm)
 
 const AUTO_CONSUME_SILENT = new Set(['ا', 'و', 'ي', 'ى', 'ل', 'ٱ']);
 
 const HINT_ORDER = ['shadda','fatha','kasra','damma','sukun',
   'tanween_fath','tanween_kasr','tanween_damm',
-  'dagger_alif','maddah_above','high_madda'];
+  'dagger_alif','subscript_alef','inverted_damma',
+  'maddah_above','high_madda'];
 
 export class LiveMatcher {
   constructor(skeleton, { strict = false } = {}) {

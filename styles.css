@@ -144,9 +144,13 @@ html, body {
 .my-book__surah-title { margin: 0 0 8px 0; font-size: 15px; color: #2c8a02; }
 .my-book__flow {
   font-family: 'Amiri','NotoNaskhArabic',serif;
-  direction: rtl; text-align: justify;
-  font-size: 26px; line-height: 2.2;
+  direction: rtl; text-align: justify; text-align-last: right;
+  text-justify: inter-word;
+  font-size: 24px; line-height: 2.4;
   color: #1c1c1c;
+  background: #fffdf6; padding: 18px 20px;
+  border: 1px solid #d8cdb8; border-radius: 8px;
+  box-shadow: inset 0 0 0 4px #fffdf6, inset 0 0 0 5px #d8cdb8;
 }
 .my-book__text             { padding: 0 2px; }
 .my-book__text--perfect    { color: #2c8a02; }

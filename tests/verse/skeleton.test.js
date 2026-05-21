@@ -110,3 +110,19 @@ test('skeleton: verse-start letter with shadda — shadda dropped from required'
   assert.ok(firstSound);
   assert.ok(!firstSound.expectedHarakat.required.includes('shadda'));
 });
+
+test('skeleton: long-kasra (ٖ) is a required diacritic', () => {
+  // Quraysh 106:2 first word اٖلٰفِهِمۡ — ا has ٖ
+  const slots = buildSkeleton('اٖلٰفِهِمۡ', { isVerseStart: true });
+  const alif = slots.find(s => s.letter === 'ا');
+  assert.ok(alif);
+  assert.ok(new Set(alif.expectedHarakat.required).has('subscript_alef'));
+});
+
+test('skeleton: long-damma (ٗ) is a required diacritic', () => {
+  // Construct a contrived word with ٗ
+  const slots = buildSkeleton('قٗ');
+  const q = slots.find(s => s.letter === 'ق');
+  assert.ok(q);
+  assert.ok(new Set(q.expectedHarakat.required).has('inverted_damma'));
+});

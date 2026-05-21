@@ -49,6 +49,15 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   silent.checked = settings.silentLetterColorOn;
   labSilent.appendChild(silent);
 
+  const labAutoPlay = document.createElement('label');
+  labAutoPlay.append('Recite verse audio when a new ayah loads ');
+  const autoPlay = document.createElement('input');
+  autoPlay.type = 'checkbox';
+  autoPlay.className = 'auto-play';
+  autoPlay.checked = !!settings.autoPlayOnAyahLoad;
+  labAutoPlay.appendChild(autoPlay);
+  autoPlay.addEventListener('change', () => onChange({ autoPlayOnAyahLoad: autoPlay.checked }));
+
   const labWidth = document.createElement('label');
   labWidth.append('Stroke width ');
   const sw = document.createElement('input');
@@ -65,7 +74,7 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   closeBtn.className = 'close';
   closeBtn.textContent = 'Close';
 
-  panel.append(h, labReciter, labHint, labSilent, labWidth, resetBtn, closeBtn);
+  panel.append(h, labReciter, labHint, labAutoPlay, labSilent, labWidth, resetBtn, closeBtn);
   modal.appendChild(panel);
   root.appendChild(modal);
 

@@ -200,3 +200,25 @@ test('matcher: Indo-Pak sukun (ۡ) is accepted as sukun input', () => {
   const r = m.tryHarakat('ۡ');
   assert.equal(r.accepted, true);
 });
+
+test('matcher: long-kasra ٖ accepted as subscript_alef', () => {
+  const fake = [
+    { kind: 'sound', letter: 'ا', expectedHarakat: { required: ['subscript_alef'] }, wordIdx: 0, canonicalIdx: 0 },
+    { kind: 'wordEnd', wordIdx: 0 }
+  ];
+  const m = new LiveMatcher(fake);
+  m.tryLetter('ا');
+  const r = m.tryHarakat('ٖ');
+  assert.equal(r.accepted, true);
+});
+
+test('matcher: long-damma ٗ accepted as inverted_damma', () => {
+  const fake = [
+    { kind: 'sound', letter: 'ق', expectedHarakat: { required: ['inverted_damma'] }, wordIdx: 0, canonicalIdx: 0 },
+    { kind: 'wordEnd', wordIdx: 0 }
+  ];
+  const m = new LiveMatcher(fake);
+  m.tryLetter('ق');
+  const r = m.tryHarakat('ٗ');
+  assert.equal(r.accepted, true);
+});
