@@ -9,6 +9,13 @@ const LAM = 'ل';
 export function isSilentInWord(glyphs, index) {
   const g = glyphs[index];
   if (!g) return false;
+  // Indo-Pak silent-letter marker (U+06DF ۟ / U+06E0 ۠). When the
+  // canonical text places this small high zero above a letter, the
+  // letter is silent in recitation — auto-consume it.
+  if (g.diacritics.includes('small_high_rounded_zero')
+      || g.diacritics.includes('high_upright_rectangular_zero')) {
+    return true;
+  }
   // Madd alif (alif elongating a preceding fatha) is normally TYPED by the
   // user. Exception: if the letter immediately following the alif carries a
   // sukun or a shadda, the alif is not elongated in recitation and the user

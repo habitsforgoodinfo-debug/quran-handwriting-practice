@@ -1,7 +1,9 @@
 const CLASSES = [
   new Set(['ت','ة']),
   new Set(['ا','أ','إ','آ','ٱ']),
-  new Set(['ي','ى']),
+  // Arabic yeh (ي), Persian/Urdu yeh (ی U+06CC), alif maqsura (ى)
+  // The Tarteel Indo-Pak Mushaf uses ی throughout.
+  new Set(['ي','ى','ی']),
   new Set(['ه','ة'])
 ];
 

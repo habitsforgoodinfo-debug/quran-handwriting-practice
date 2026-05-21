@@ -1,15 +1,19 @@
-// Integrity suite — every verse in chapters 78..114 of the bundled
-// Indo-Pak data should be typeable end-to-end with the current parser,
-// silent-rules, skeleton, and live-matcher. The test simulates a
-// "perfect" run: for each verse it builds the skeleton, then presses
-// every required key in order until the matcher reports complete.
+// Integrity suite for Tarteel Indo-Pak Nastaleeq data (chapters 78–114).
 //
-// A failure means EITHER the data has a glyph our rules don't recognize
-// as gateable / silent (so the user gets stuck on a phantom slot), OR
-// the matcher cannot accept some legitimate input. Either way the user
-// would experience a verse that never completes.
+// For every verse:
+//   1. Build the skeleton (with isVerseStart=true).
+//   2. Walk slot-by-slot through the live matcher, pressing the expected
+//      letter and each remaining required harakat in order.
+//   3. Assert the verse reaches awaiting='done' and that every key the
+//      matcher demands has a corresponding keypad button mapped.
 //
-// Run on demand:  node --test tests/integration/juz-amma-typeable.test.js
+// A failure means a verse contains a letter or diacritic the user
+// cannot type via the on-screen keypad — i.e. it would freeze the
+// practice loop in the browser.
+//
+// Run on demand:
+//     node --test tests/integration/juz-amma-typeable.test.js
+// The full `node --test tests/` run also exercises it.
 
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
@@ -22,6 +26,7 @@ import { LiveMatcher } from '../../src/compare/live-matcher.js';
 const HERE = dirname(fileURLToPath(import.meta.url));
 const QURAN_PATH = resolve(HERE, '../../assets/quran/quran-indopak.json');
 
+// Mark name → input codepoint (matches HARAKAT_BASE in keypad.js).
 const HARAKAT_CHAR = {
   fatha: 'َ', kasra: 'ِ', damma: 'ُ', sukun: 'ْ', shadda: 'ّ',
   tanween_fath: 'ً', tanween_kasr: 'ٍ', tanween_damm: 'ٌ',
@@ -29,8 +34,24 @@ const HARAKAT_CHAR = {
   subscript_alef: 'ٖ', inverted_damma: 'ٗ'
 };
 
-// Try to drive the matcher to completion by reading the skeleton.
-// Returns { ok, surah, ayah, slotIdx, reason } when stuck.
+// Letters reachable from the keypad layout (mirrors src/ui/keypad.js).
+const KEYPAD_LETTERS = new Set([
+  'ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د','ذ',
+  'ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط',
+  'ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ'
+]);
+// Letters from Indo-Pak data that aren't on the keypad but are accepted
+// via tolerance (e.g. Urdu yeh ی → Arabic yeh ي).
+const TOLERANCE_FALLBACK = new Map([
+  ['ی', 'ي']
+]);
+
+function keypadHasLetter(letter) {
+  if (KEYPAD_LETTERS.has(letter)) return true;
+  if (TOLERANCE_FALLBACK.has(letter)) return KEYPAD_LETTERS.has(TOLERANCE_FALLBACK.get(letter));
+  return false;
+}
+
 function tryTypeVerse(surah, ayah, rawText) {
   const skeleton = buildSkeleton(rawText, { isVerseStart: true });
   const m = new LiveMatcher(skeleton);
@@ -40,16 +61,22 @@ function tryTypeVerse(surah, ayah, rawText) {
     const slot = skeleton[m.state.slotIdx];
     if (!slot) return { ok: false, surah, ayah, slotIdx: m.state.slotIdx, reason: 'no slot' };
     if (m.state.awaiting === 'letter') {
-      const r = m.tryLetter(slot.letter);
+      // Need a keypad-reachable letter for this slot.
+      if (!keypadHasLetter(slot.letter)) {
+        return { ok: false, surah, ayah, slotIdx: m.state.slotIdx,
+          reason: `letter "${slot.letter}" (U+${slot.letter.codePointAt(0).toString(16)}) missing from keypad` };
+      }
+      const input = TOLERANCE_FALLBACK.get(slot.letter) || slot.letter;
+      const r = m.tryLetter(input);
       if (!r.accepted) {
         return { ok: false, surah, ayah, slotIdx: m.state.slotIdx,
-          reason: `letter ${slot.letter} rejected (kind=${slot.kind})` };
+          reason: `letter ${input} rejected (kind=${slot.kind}, expected=${slot.letter})` };
       }
     } else {
       const need = [...m.state.pendingMarks][0];
       const ch = HARAKAT_CHAR[need];
       if (!ch) return { ok: false, surah, ayah, slotIdx: m.state.slotIdx,
-        reason: `no input mapping for required mark "${need}"` };
+        reason: `required mark "${need}" has no keypad input` };
       const r = m.tryHarakat(ch);
       if (!r.accepted) {
         return { ok: false, surah, ayah, slotIdx: m.state.slotIdx,
@@ -65,33 +92,38 @@ const quran = JSON.parse(readFileSync(QURAN_PATH, 'utf8'));
 const SURAH_RANGE = [];
 for (let s = 78; s <= 114; s++) SURAH_RANGE.push(s);
 
-const results = { ok: 0, fail: 0, failures: [] };
+const results = { ok: 0, fail: 0, failures: [], byChapter: {} };
 
 for (const s of SURAH_RANGE) {
   const surahData = quran[String(s)];
   if (!surahData) continue;
   const verses = surahData.verses;
+  results.byChapter[s] = { ok: 0, fail: 0 };
   for (const ayahKey of Object.keys(verses)) {
     const ayah = parseInt(ayahKey, 10);
     const rawText = verses[ayahKey];
     const r = tryTypeVerse(s, ayah, rawText);
-    if (r.ok) results.ok++;
-    else { results.fail++; results.failures.push(r); }
+    if (r.ok) { results.ok++; results.byChapter[s].ok++; }
+    else      { results.fail++; results.byChapter[s].fail++; results.failures.push(r); }
   }
 }
 
-test('juz-amma typability report (chapters 78–114)', () => {
-  // eslint-disable-next-line no-console
-  console.log(`\n[juz-amma integrity] passed: ${results.ok}, failed: ${results.fail}`);
+test('Tarteel Indo-Pak chapters 78–114: every verse fully typeable', () => {
+  console.log(`\n[Tarteel Indo-Pak juz-amma integrity]`);
+  console.log(`  total verses:  ${results.ok + results.fail}`);
+  console.log(`  passed:        ${results.ok}`);
+  console.log(`  failed:        ${results.fail}`);
+  console.log(`  chapters covered: ${Object.keys(results.byChapter).length}  (78..114)`);
   if (results.failures.length) {
-    const sample = results.failures.slice(0, 12);
+    const sample = results.failures.slice(0, 20);
+    console.log(`  first failures:`);
     for (const f of sample) {
-      console.log(`  ✗ ${f.surah}:${f.ayah}  slot ${f.slotIdx}  ${f.reason}`);
+      console.log(`    ✗ ${f.surah}:${f.ayah}  slot ${f.slotIdx}  ${f.reason}`);
     }
     if (results.failures.length > sample.length) {
-      console.log(`  …(+${results.failures.length - sample.length} more)`);
+      console.log(`    …(+${results.failures.length - sample.length} more)`);
     }
   }
   assert.equal(results.fail, 0,
-    `${results.fail} verses in chapters 78..114 are not typeable end-to-end`);
+    `${results.fail} verses in chapters 78..114 are not fully typeable`);
 });

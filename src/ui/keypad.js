@@ -15,31 +15,19 @@ const HARAKAT_BASE = [
   { name: 'maddah_above', char: 'ٓ',  longChar: 'ۤ' }    // long-press → Indo-Pak high madda (6-count)
 ];
 
-function harakatForScript(script) {
-  return HARAKAT_BASE.map(h => {
-    if (script === 'indopak' && h.name === 'sukun')        return { ...h, displayChar: 'ۡ' };
-    if (script === 'indopak' && h.name === 'maddah_above') return { ...h, displayChar: 'ۤ' };
-    return { ...h, displayChar: h.char };
-  });
-}
-
 const LETTER_TIPS = {
   'ء': 'standalone hamza',
   'ئ': 'hamza on yeh (mid-word, e.g. سَائِل)',
-  'ؤ': 'hamza on waw (mid-word, e.g. مُؤْمِن)',
-  'د': 'long-press for ذ'
+  'ؤ': 'hamza on waw (mid-word, e.g. مُؤْمِن)'
 };
 
-// Standard Google / iOS Arabic mobile keyboard arrangement.
-// د is a long-press source for ذ (matches Google Gboard behavior).
+// Google / iOS Arabic mobile keyboard arrangement. ذ added explicitly
+// (no per-letter long-press anywhere in the keypad).
 const LAYOUT = [
-  ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د'],
+  ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د','ذ'],
   ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
   ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
 ];
-
-// Letters that long-press into a different letter.
-const LETTER_LONGPRESS = { 'د': 'ذ' };
 
 const LONG_PRESS_MS = 450;
 
@@ -60,6 +48,9 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
 
   root.append(harakatRow, lettersWrap, actionRow);
 
+  // Each entry in byChar maps a CHAR → key element. A single key may be
+  // registered under several chars (canonical, displayed, long-press form)
+  // so setHint() can glow it regardless of which char the matcher hints.
   const byChar = new Map();
 
   function mkLetterKey(ch) {
@@ -67,38 +58,11 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
     b.className = 'key key--letter';
     b.textContent = ch;
     if (LETTER_TIPS[ch]) b.setAttribute('title', LETTER_TIPS[ch]);
-    byChar.set(ch, b);
-
-    const longCh = LETTER_LONGPRESS[ch];
-    if (!longCh) {
-      b.addEventListener('click', () => {
-        vibrateTap();
-        handlers.onLetter && handlers.onLetter(ch);
-      });
-      return b;
-    }
-
-    // Long-press: hold to fire the alternate letter; click fires short.
-    byChar.set(longCh, b);
-    let timer = null, longFired = false;
-    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
-    b.addEventListener('pointerdown', () => {
-      longFired = false;
-      timer = setTimeout(() => {
-        longFired = true;
-        b.classList.add('key--long-fired');
-        vibrateTap();
-        handlers.onLetter && handlers.onLetter(longCh);
-      }, LONG_PRESS_MS);
-    });
-    b.addEventListener('pointerup', () => { cancel(); setTimeout(() => b.classList.remove('key--long-fired'), 150); });
-    b.addEventListener('pointerleave', () => { cancel(); b.classList.remove('key--long-fired'); });
-    b.addEventListener('pointercancel', () => { cancel(); b.classList.remove('key--long-fired'); });
     b.addEventListener('click', () => {
-      if (longFired) { longFired = false; return; }
       vibrateTap();
       handlers.onLetter && handlers.onLetter(ch);
     });
+    byChar.set(ch, b);
     return b;
   }
 
@@ -113,29 +77,38 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
   function mkHarakatKey(spec) {
     const b = document.createElement('button');
     b.className = 'key key--harakah';
-    b.textContent = 'ـ' + spec.displayChar;
-    // Register under BOTH the displayed and canonical char so setHint()
-    // can find the key whether the matcher returns 'ْ' or the Indo-Pak
-    // alias 'ۡ'. Same for madda variants.
-    byChar.set(spec.displayChar, b);
-    if (spec.char !== spec.displayChar) byChar.set(spec.char, b);
+
+    // Visible face: kashida + short form, plus a small superscript hint
+    // of the long-press form when the key has one.
+    const main = document.createElement('span');
+    main.className = 'k-main';
+    main.textContent = 'ـ' + spec.char;
+    b.appendChild(main);
+    if (spec.longChar) {
+      const alt = document.createElement('span');
+      alt.className = 'k-alt';
+      alt.textContent = spec.longChar;
+      b.appendChild(alt);
+      b.setAttribute('title', `Tap for ${spec.char} — long-press for ${spec.longChar}`);
+    }
+
+    byChar.set(spec.char, b);
+    if (spec.longChar) byChar.set(spec.longChar, b);
+    // Indo-Pak codepoint aliases that should glow the same button.
+    if (spec.name === 'sukun')        { byChar.set('ۡ', b); } // U+06E1
+    if (spec.name === 'maddah_above') { byChar.set('ۤ', b); } // U+06E4
 
     if (!spec.longChar) {
       b.addEventListener('click', () => {
         vibrateTap();
-        handlers.onHarakat && handlers.onHarakat(spec.displayChar);
+        handlers.onHarakat && handlers.onHarakat(spec.char);
       });
       return b;
     }
 
-    // Long-press capable key. Click always fires the short form; a
-    // pointerdown held > LONG_PRESS_MS fires the long form and swallows
-    // the click that would otherwise follow.
+    // Long-press key: click fires short, hold > LONG_PRESS_MS fires long.
     let timer = null, longFired = false;
-    const cancelTimer = () => {
-      if (timer) { clearTimeout(timer); timer = null; }
-      b.classList.remove('key--long-fired');
-    };
+    const cancel = () => { if (timer) { clearTimeout(timer); timer = null; } };
     b.addEventListener('pointerdown', () => {
       longFired = false;
       timer = setTimeout(() => {
@@ -145,22 +118,20 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
         handlers.onHarakat && handlers.onHarakat(spec.longChar);
       }, LONG_PRESS_MS);
     });
-    b.addEventListener('pointerup',    cancelTimer);
-    b.addEventListener('pointerleave', cancelTimer);
-    b.addEventListener('pointercancel', cancelTimer);
+    b.addEventListener('pointerup',    () => { cancel(); setTimeout(() => b.classList.remove('key--long-fired'), 150); });
+    b.addEventListener('pointerleave', () => { cancel(); b.classList.remove('key--long-fired'); });
+    b.addEventListener('pointercancel', () => { cancel(); b.classList.remove('key--long-fired'); });
     b.addEventListener('click', () => {
       if (longFired) { longFired = false; return; }
       vibrateTap();
-      handlers.onHarakat && handlers.onHarakat(spec.displayChar);
+      handlers.onHarakat && handlers.onHarakat(spec.char);
     });
     return b;
   }
 
   function buildHarakatRow() {
     harakatRow.innerHTML = '';
-    for (const h of harakatForScript(currentScript)) {
-      harakatRow.appendChild(mkHarakatKey(h));
-    }
+    for (const h of HARAKAT_BASE) harakatRow.appendChild(mkHarakatKey(h));
   }
   buildHarakatRow();
 
@@ -192,12 +163,10 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
   }
 
   function setHandlers(next) { Object.assign(handlers, next); }
-  function setScript(s) {
-    if (s === currentScript) return;
-    currentScript = s;
-    for (const h of HARAKAT_BASE) byChar.delete(h.char);
-    byChar.delete('ۡ'); byChar.delete('ۤ');
-    buildHarakatRow();
+  function setScript(_s) {
+    // Kept for API compatibility — the keypad no longer swaps glyphs by
+    // script. Both Uthmani and Indo-Pak codepoints are aliased to the
+    // same key, so the same physical button works for both scripts.
   }
 
   return {

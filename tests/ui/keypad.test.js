@@ -80,7 +80,11 @@ test('keypad: flashWrong adds .shake to matching key', () => {
 
 test('keypad: dagger-alif key exists on harakat row and fires onHarakat with ٰ', () => {
   const { root, calls } = setup();
-  const k = root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ٰ'));
+  // The dagger-alif key has ٰ as its MAIN glyph (not just an alt hint).
+  const k = root.querySelectorAll('.key--harakah').find(b => {
+    const main = b.querySelectorAll('.k-main')[0];
+    return main && main.textContent.includes('ٰ');
+  });
   assert.ok(k, 'dagger-alif key missing');
   k.dispatch('click');
   assert.deepEqual(calls.harakat, ['ٰ']);
@@ -114,24 +118,53 @@ test('keypad: harakat row has exactly 10 keys', () => {
   assert.equal(root.querySelectorAll('.key--harakah').length, 10);
 });
 
-test('keypad: indopak script fires jazm ۡ (matcher accepts either)', () => {
+test('keypad: sukun key fires ْ in both scripts (single canonical glyph)', () => {
   const doc = makeDocument();
   globalThis.document = doc;
   const root = doc.createElement('div');
   const calls = { harakat: [] };
   mountKeypad(root, { onHarakat: c => calls.harakat.push(c) }, { script: 'indopak' });
-  const k = root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ۡ'));
-  assert.ok(k, 'jazm key (ۡ) should display in indopak mode');
-  k.dispatch('click');
-  assert.deepEqual(calls.harakat, ['ۡ']);
+  const sukun = root.querySelectorAll('.key--harakah').find(b => {
+    const main = b.querySelectorAll('.k-main')[0];
+    return main && main.textContent.includes('ْ');
+  });
+  assert.ok(sukun, 'sukun key (ْ) should be present');
+  sukun.dispatch('click');
+  assert.deepEqual(calls.harakat, ['ْ']);
 });
 
-test('keypad: setScript swaps the sukun glyph live', () => {
-  const doc = makeDocument();
-  globalThis.document = doc;
-  const root = doc.createElement('div');
-  const api = mountKeypad(root, { onHarakat: () => {} }, { script: 'uthmani' });
-  assert.ok(root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ْ')));
-  api.setScript('indopak');
-  assert.ok(root.querySelectorAll('.key--harakah').find(b => b.textContent.includes('ۡ')));
+test('keypad: hint glow — setHint({harakat: ٰ}) glows the dagger-alif key (the dedicated key wins over fatha-long-press)', () => {
+  const { root, api } = setup();
+  api.setHint({ harakat: 'ٰ' });
+  const glowing = root.querySelectorAll('.key--glow');
+  assert.equal(glowing.length, 1);
+  const main = glowing[0].querySelectorAll('.k-main')[0];
+  assert.ok(main && main.textContent.includes('ٰ'));
+});
+
+test('keypad: long-press hint glow — setHint({harakat: ٖ}) glows the kasra key', () => {
+  const { root, api } = setup();
+  api.setHint({ harakat: 'ٖ' });
+  const glowing = root.querySelectorAll('.key--glow');
+  assert.equal(glowing.length, 1);
+  const main = glowing[0].querySelectorAll('.k-main')[0];
+  assert.ok(main && main.textContent.includes('ِ'));
+});
+
+test('keypad: long-press hint glow — setHint({harakat: ٗ}) glows the damma key', () => {
+  const { root, api } = setup();
+  api.setHint({ harakat: 'ٗ' });
+  const glowing = root.querySelectorAll('.key--glow');
+  assert.equal(glowing.length, 1);
+  const main = glowing[0].querySelectorAll('.k-main')[0];
+  assert.ok(main && main.textContent.includes('ُ'));
+});
+
+test('keypad: setHint({harakat: ۡ}) (Indo-Pak sukun) also glows sukun key', () => {
+  const { root, api } = setup();
+  api.setHint({ harakat: 'ۡ' });
+  const glowing = root.querySelectorAll('.key--glow');
+  assert.equal(glowing.length, 1);
+  const main = glowing[0].querySelectorAll('.k-main')[0];
+  assert.ok(main && main.textContent.includes('ْ'));
 });

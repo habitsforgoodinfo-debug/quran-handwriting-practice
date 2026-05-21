@@ -16,10 +16,8 @@ const GATED_DIACRITICS = new Set([
 // counterpart, so the matcher should require the canonical name (and accept
 // either codepoint as input — handled in live-matcher.js).
 const DIACRITIC_ALIASES = {
-  high_dotless_head_of_khah: 'sukun',       // U+06E1 (Indo-Pak sukun)
+  high_dotless_head_of_khah: 'sukun',       // U+06E1 (Indo-Pak alt sukun)
   high_madda:                'maddah_above',// U+06E4 (Indo-Pak madda)
-  mark_0656:                 'subscript_alef',
-  mark_0657:                 'inverted_damma'
 };
 
 // Pause / stop annotations a renderer should show after the letter even

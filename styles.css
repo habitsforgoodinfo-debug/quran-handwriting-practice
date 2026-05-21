@@ -96,7 +96,7 @@ html, body {
 .keypad-harakat { display: grid; grid-template-columns: repeat(10, 1fr); gap: 4px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }
 .keypad-row     { display: grid; gap: 4px; }
-.keypad-row:nth-child(1) { grid-template-columns: repeat(12, 1fr); }
+.keypad-row:nth-child(1) { grid-template-columns: repeat(13, 1fr); }
 .keypad-row:nth-child(2) { grid-template-columns: repeat(11, 1fr); }
 .keypad-row:nth-child(3) { grid-template-columns: repeat(10, 1fr); }
 .keypad-actions { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 4px; }
@@ -109,7 +109,19 @@ html, body {
   touch-action: manipulation; padding: 0; user-select: none; cursor: pointer;
 }
 .key:active { background: #f7efdc; }
-.key--harakah { font-size: 40px; min-height: 56px; line-height: 1; padding-bottom: 6px; }
+.key--harakah {
+  font-size: 30px; min-height: 56px; line-height: 1;
+  position: relative; padding: 4px 0 2px;
+}
+.key--harakah .k-main { display: inline-block; font-size: 32px; }
+.key--harakah .k-alt {
+  position: absolute; top: 3px; right: 4px;
+  font-size: 18px; color: #8a6300; opacity: 0.85;
+  background: #fff3c4; border-radius: 3px;
+  padding: 0 3px; line-height: 1.1;
+  pointer-events: none;
+}
+.key--harakah.key--long-fired { background: #fef2c0; box-shadow: 0 0 0 2px #ffc800; }
 .key--action  { font-family: 'Nunito', 'Inter', system-ui, sans-serif; font-size: 14px; }
 .key--action.audio { background: #e8f6fe; color: #1cb0f6; border-color: #b9e3fb; }
 .key--action.next  { background: #f1fbe6; color: #1c1c1c; border-color: #b8e08a; }
