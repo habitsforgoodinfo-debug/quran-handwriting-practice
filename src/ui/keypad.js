@@ -3,16 +3,18 @@ import { vibrateTap, vibrateWrong } from './feedback.js';
 // Each harakat key: short tap fires `char`; long-press (where defined)
 // fires `longChar` — the elongated form (Indo-Pak long-vowel marks).
 const HARAKAT_BASE = [
-  { name: 'fatha',        char: 'َ',  longChar: 'ٰ' },   // long-press → dagger alif (long fatha)
-  { name: 'damma',        char: 'ُ',  longChar: 'ٗ' },   // long-press → inverted damma (long damma)
-  { name: 'kasra',        char: 'ِ',  longChar: 'ٖ' },   // long-press → subscript alef (long kasra)
-  { name: 'sukun',        char: 'ْ'  },
-  { name: 'shadda',       char: 'ّ'  },
-  { name: 'tanween_fath', char: 'ً'  },
-  { name: 'tanween_damm', char: 'ٌ'  },
-  { name: 'tanween_kasr', char: 'ٍ'  },
-  { name: 'dagger_alif',  char: 'ٰ'  },
-  { name: 'maddah_above', char: 'ٓ',  longChar: 'ۤ' }    // long-press → Indo-Pak high madda (6-count)
+  { name: 'fatha',          char: 'َ',  longChar: 'ٰ' },   // long-press → dagger alif (long fatha)
+  { name: 'damma',          char: 'ُ',  longChar: 'ٗ' },   // long-press → inverted damma (long damma)
+  { name: 'kasra',          char: 'ِ',  longChar: 'ٖ' },   // long-press → subscript alef (long kasra)
+  { name: 'sukun',          char: 'ۡ'  },                  // Indo-Pak jazm (U+06E1)
+  { name: 'shadda',         char: 'ّ'  },
+  { name: 'tanween_fath',   char: 'ً'  },
+  { name: 'tanween_damm',   char: 'ٌ'  },
+  { name: 'tanween_kasr',   char: 'ٍ'  },
+  { name: 'dagger_alif',    char: 'ٰ'  },
+  { name: 'maddah_above',   char: 'ٓ',  longChar: 'ۤ' },    // long-press → Indo-Pak high madda (6-count)
+  { name: 'subscript_alef', char: 'ٖ'  },                  // long kasra (also reachable via long-press on kasra)
+  { name: 'inverted_damma', char: 'ٗ'  }                   // long damma (also reachable via long-press on damma)
 ];
 
 const LETTER_TIPS = {
@@ -26,7 +28,7 @@ const LETTER_TIPS = {
 const LAYOUT = [
   ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د','ذ'],
   ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
-  ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ']
+  ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ','آ','أ','إ']
 ];
 
 const LONG_PRESS_MS = 450;
@@ -94,9 +96,10 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
 
     byChar.set(spec.char, b);
     if (spec.longChar) byChar.set(spec.longChar, b);
-    // Indo-Pak codepoint aliases that should glow the same button.
-    if (spec.name === 'sukun')        { byChar.set('ۡ', b); } // U+06E1
-    if (spec.name === 'maddah_above') { byChar.set('ۤ', b); } // U+06E4
+    // Alias the alternate codepoint to the same key so it glows whichever
+    // form the matcher hints (Uthmani ْ ↔ Indo-Pak ۡ).
+    if (spec.name === 'sukun')        { byChar.set('ْ', b); }  // Uthmani sukun
+    if (spec.name === 'maddah_above') { byChar.set('ۤ', b); }  // Indo-Pak high madda
 
     if (!spec.longChar) {
       b.addEventListener('click', () => {

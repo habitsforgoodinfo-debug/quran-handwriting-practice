@@ -1,14 +1,34 @@
 import { RECITERS } from '../audio/player.js';
 
-// Letters offered as toggleable "required" chips in the settings modal.
-// Order roughly matches the Arabic alphabet so it reads naturally.
+// Every Arabic letter the user might encounter, with a friendly English name.
+// Order roughly matches the Arabic alphabet, with the hamza variants and
+// alif maqsura at the end.
 const TOGGLEABLE_LETTERS = [
-  ['ا','alif'], ['ب','ba'], ['ت','ta'], ['ث','tha'], ['ج','jeem'],
-  ['ح','haa'], ['خ','kha'], ['د','dal'], ['ذ','zal'], ['ر','ra'],
-  ['ز','za'], ['س','seen'], ['ش','sheen'], ['ص','suad'], ['ض','duad'],
-  ['ط','tua'], ['ظ','zua'], ['ع','ain'], ['غ','ghain'], ['ف','fa'],
-  ['ق','qaf'], ['ك','kaf'], ['ل','lam'], ['م','meem'], ['ن','noon'],
-  ['ه','ha'], ['و','waw'], ['ي','ya'], ['ء','hamza'], ['ة','ta-marbuta']
+  ['ا','alif'], ['ب','ba'],  ['ت','ta'],   ['ث','tha'],  ['ج','jeem'],
+  ['ح','haa'], ['خ','kha'], ['د','dal'],  ['ذ','zal'],  ['ر','ra'],
+  ['ز','za'],  ['س','seen'], ['ش','sheen'],['ص','suad'], ['ض','duad'],
+  ['ط','tua'], ['ظ','zua'], ['ع','ain'],  ['غ','ghain'],['ف','fa'],
+  ['ق','qaf'], ['ك','kaf'], ['ل','lam'],  ['م','meem'], ['ن','noon'],
+  ['ه','ha'],  ['و','waw'], ['ي','ya'],   ['ء','hamza'],['ة','ta-marbuta'],
+  ['ى','alif-maqsura'], ['أ','alif-hamza-above'], ['إ','alif-hamza-below'],
+  ['آ','alif-madda'], ['ؤ','waw-hamza'], ['ئ','ya-hamza']
+];
+
+// Harakat (diacritics) the user can opt out of. Display glyph uses a
+// kashida to give it a baseline like in the keypad.
+const TOGGLEABLE_HARAKAT = [
+  ['fatha',          'ـَ',  'fatha'],
+  ['kasra',          'ـِ',  'kasra'],
+  ['damma',          'ـُ',  'damma'],
+  ['sukun',          'ـۡ',  'sukun (jazm)'],
+  ['shadda',         'ـّ',  'shadda'],
+  ['tanween_fath',   'ـً',  'tanween fath'],
+  ['tanween_kasr',   'ـٍ',  'tanween kasr'],
+  ['tanween_damm',   'ـٌ',  'tanween damm'],
+  ['dagger_alif',    'ـٰ',  'dagger alif'],
+  ['maddah_above',   'ـٓ',  'maddah'],
+  ['subscript_alef', 'ـٖ',  'subscript alef'],
+  ['inverted_damma', 'ـٗ',  'inverted damma']
 ];
 
 export function mountSettingsModal(root, { settings, onChange, onResetStats, onClose }) {
@@ -77,37 +97,65 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   sw.value = String(settings.strokeWidth);
   labWidth.appendChild(sw);
 
+  // ---- Required letters ----
   const lettersBlock = document.createElement('div');
   lettersBlock.className = 'required-letters';
   const lettersTitle = document.createElement('div');
   lettersTitle.className = 'required-letters__title';
-  lettersTitle.textContent = 'Required letters (unticked letters are auto-filled)';
+  lettersTitle.textContent = 'Required letters (selected letters must be written; others are auto-filled)';
   const lettersGrid = document.createElement('div');
   lettersGrid.className = 'required-letters__grid';
 
-  const optionalSet = new Set(settings.optionalLetters || []);
-
-  function emitOptional() {
-    onChange({ optionalLetters: [...optionalSet] });
-  }
+  const requiredLettersSet = new Set(settings.requiredLetters || []);
+  function emitLetters() { onChange({ requiredLetters: [...requiredLettersSet] }); }
 
   for (const [ch, name] of TOGGLEABLE_LETTERS) {
     const chip = document.createElement('button');
     chip.type = 'button';
-    chip.className = 'letter-chip' + (optionalSet.has(ch) ? '' : ' letter-chip--required');
+    chip.className = 'letter-chip' + (requiredLettersSet.has(ch) ? ' letter-chip--required' : '');
     chip.dataset.letter = ch;
     chip.setAttribute('title', name);
     const g = document.createElement('span'); g.className = 'letter-chip__glyph'; g.textContent = ch;
     const n = document.createElement('span'); n.className = 'letter-chip__name';  n.textContent = name;
     chip.append(g, n);
     chip.addEventListener('click', () => {
-      if (optionalSet.has(ch)) { optionalSet.delete(ch); chip.classList.add('letter-chip--required'); }
-      else                     { optionalSet.add(ch);    chip.classList.remove('letter-chip--required'); }
-      emitOptional();
+      if (requiredLettersSet.has(ch)) { requiredLettersSet.delete(ch); chip.classList.remove('letter-chip--required'); }
+      else                            { requiredLettersSet.add(ch);    chip.classList.add('letter-chip--required'); }
+      emitLetters();
     });
     lettersGrid.appendChild(chip);
   }
   lettersBlock.append(lettersTitle, lettersGrid);
+
+  // ---- Required harakat ----
+  const harakatBlock = document.createElement('div');
+  harakatBlock.className = 'required-letters';
+  const harakatTitle = document.createElement('div');
+  harakatTitle.className = 'required-letters__title';
+  harakatTitle.textContent = 'Required harakat (selected must be written; others are auto-filled)';
+  const harakatGrid = document.createElement('div');
+  harakatGrid.className = 'required-letters__grid';
+
+  const requiredHarakatSet = new Set(settings.requiredHarakat || []);
+  function emitHarakat() { onChange({ requiredHarakat: [...requiredHarakatSet] }); }
+
+  for (const [name, glyph, label] of TOGGLEABLE_HARAKAT) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'letter-chip' + (requiredHarakatSet.has(name) ? ' letter-chip--required' : '');
+    chip.dataset.harakat = name;
+    chip.setAttribute('title', label);
+    const g = document.createElement('span'); g.className = 'letter-chip__glyph'; g.textContent = glyph;
+    const n = document.createElement('span'); n.className = 'letter-chip__name';  n.textContent = label;
+    chip.append(g, n);
+    chip.addEventListener('click', () => {
+      if (requiredHarakatSet.has(name)) { requiredHarakatSet.delete(name); chip.classList.remove('letter-chip--required'); }
+      else                              { requiredHarakatSet.add(name);    chip.classList.add('letter-chip--required'); }
+      emitHarakat();
+    });
+    harakatGrid.appendChild(chip);
+  }
+  harakatBlock.append(harakatTitle, harakatGrid);
 
   const resetBtn = document.createElement('button');
   resetBtn.className = 'reset-stats';
@@ -117,7 +165,11 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   closeBtn.className = 'close';
   closeBtn.textContent = 'Close';
 
-  panel.append(h, labReciter, labHint, labAutoPlay, labSilent, labWidth, lettersBlock, resetBtn, closeBtn);
+  panel.append(
+    h, labReciter, labHint, labAutoPlay, labSilent, labWidth,
+    lettersBlock, harakatBlock,
+    resetBtn, closeBtn
+  );
   modal.appendChild(panel);
   root.appendChild(modal);
 

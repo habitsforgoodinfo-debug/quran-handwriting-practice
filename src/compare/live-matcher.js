@@ -1,7 +1,7 @@
 import { lettersEquivalent } from './tolerance.js';
 
 const HARAKAT_CHAR = {
-  fatha: 'َ', kasra: 'ِ', damma: 'ُ', sukun: 'ْ', shadda: 'ّ',
+  fatha: 'َ', kasra: 'ِ', damma: 'ُ', sukun: 'ۡ', shadda: 'ّ',
   tanween_fath: 'ً', tanween_kasr: 'ٍ', tanween_damm: 'ٌ',
   dagger_alif: 'ٰ', maddah_above: 'ٓ',
   subscript_alef: 'ٖ', inverted_damma: 'ٗ'
@@ -10,7 +10,7 @@ const HARAKAT_NAME = Object.fromEntries(
   Object.entries(HARAKAT_CHAR).map(([n, c]) => [c, n])
 );
 HARAKAT_NAME['ۤ'] = 'maddah_above';     // Indo-Pak high madda
-HARAKAT_NAME['ۡ'] = 'sukun';            // Indo-Pak sukun (jazm)
+HARAKAT_NAME['ْ'] = 'sukun';            // Uthmani sukun (circle) — accepted as input
 
 const AUTO_CONSUME_SILENT = new Set(['ا', 'و', 'ي', 'ى', 'ل', 'ٱ']);
 
@@ -20,25 +20,35 @@ const HINT_ORDER = ['shadda','fatha','kasra','damma','sukun',
   'maddah_above','high_madda'];
 
 export class LiveMatcher {
-  constructor(skeleton, { strict = false, optionalLetters = [] } = {}) {
+  constructor(skeleton, {
+    strict = false,
+    requiredLetters = null,    // null = all letters required
+    requiredHarakat = null     // null = all harakat required
+  } = {}) {
     this.skeleton = skeleton;
     this.strict = strict;
-    this.optionalLetters = new Set(optionalLetters);
+    this.requiredLetters = requiredLetters ? new Set(requiredLetters) : null;
+    this.requiredHarakat = requiredHarakat ? new Set(requiredHarakat) : null;
     this.state = {
       slotIdx: 0,
       awaiting: 'letter',
       typed: [],
       pendingMarks: new Set(),
+      autoHarakat: '',
       rejectCount: 0
     };
     this._advanceToNextSound([]);
+  }
+
+  _letterIsOptional(letter) {
+    return this.requiredLetters && !this.requiredLetters.has(letter);
   }
 
   _isAutoConsumed(slot) {
     if (slot.kind === 'wordEnd') return true;
     if (slot.kind === 'silent' && AUTO_CONSUME_SILENT.has(slot.letter)) return true;
     if ((slot.kind === 'sound' || slot.kind === 'silent') &&
-        this.optionalLetters.has(slot.letter)) return true;
+        this._letterIsOptional(slot.letter)) return true;
     return false;
   }
 
@@ -48,7 +58,9 @@ export class LiveMatcher {
       if (this._isAutoConsumed(s)) {
         inserted.push(s);
         const entry = { kind: s.kind, letter: s.letter, slotIdx: this.state.slotIdx };
-        if ((s.kind === 'sound' || s.kind === 'silent') && this.optionalLetters.has(s.letter)) {
+        if ((s.kind === 'sound' || s.kind === 'silent') && this._letterIsOptional(s.letter)) {
+          // Whole letter is auto-filled → fill in EVERY required harakat
+          // regardless of which harakat the user has opted out of.
           const required = s.expectedHarakat?.required || [];
           const harakatStr = required.map(n => HARAKAT_CHAR[n] || '').join('');
           if (harakatStr) entry.harakat = harakatStr;
@@ -70,9 +82,16 @@ export class LiveMatcher {
   _resetPendingForCurrent() {
     const slot = this.skeleton[this.state.slotIdx];
     this.state.pendingMarks = new Set();
+    this.state.autoHarakat = '';
     if (!slot || (slot.kind !== 'sound' && slot.kind !== 'silent')) return;
     const required = slot.expectedHarakat.required || [];
-    for (const m of required) this.state.pendingMarks.add(m);
+    for (const m of required) {
+      if (this.requiredHarakat && !this.requiredHarakat.has(m)) {
+        this.state.autoHarakat += HARAKAT_CHAR[m] || '';
+      } else {
+        this.state.pendingMarks.add(m);
+      }
+    }
   }
 
   _acceptHarakat(name) {
@@ -123,10 +142,14 @@ export class LiveMatcher {
       this.state.rejectCount++;
       return { accepted: false, autoInserted: [] };
     }
-    this.state.typed.push({ kind: 'sound', letter: slot.letter, slotIdx: this.state.slotIdx });
+    const entry = { kind: 'sound', letter: slot.letter, slotIdx: this.state.slotIdx };
+    if (this.state.autoHarakat) entry.harakat = this.state.autoHarakat;
+    this.state.typed.push(entry);
     this.state.rejectCount = 0;
 
-    if (slot.expectedHarakat.hasNone || (slot.expectedHarakat.required || []).length === 0) {
+    if (slot.expectedHarakat.hasNone ||
+        (slot.expectedHarakat.required || []).length === 0 ||
+        this.state.pendingMarks.size === 0) {
       this.state.slotIdx++;
       const inserted = [];
       this._advanceToNextSound(inserted);

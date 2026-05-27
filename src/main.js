@@ -265,7 +265,8 @@ function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
     ayah: state.ayah,
     rawText,
     slide,
-    optionalLetters: state.settings.optionalLetters || []
+    requiredLetters: state.settings.requiredLetters || null,
+    requiredHarakat: state.settings.requiredHarakat || null
   });
   refreshHints();
   if (autoPlay || state.settings.autoPlayOnAyahLoad) {
@@ -293,13 +294,9 @@ function openSettings() {
   mountSettingsModal(document.body, {
     settings: state.settings,
     onChange: async (patch) => {
-      const prevOpt = state.settings.optionalLetters || [];
       state.settings = await updateSettings(patch);
-      if ('optionalLetters' in patch) {
-        const next = state.settings.optionalLetters || [];
-        if (next.length !== prevOpt.length || next.some((c, i) => c !== prevOpt[i])) {
-          loadCurrentVerse();
-        }
+      if ('requiredLetters' in patch || 'requiredHarakat' in patch) {
+        loadCurrentVerse();
       }
       refreshHints();
     },

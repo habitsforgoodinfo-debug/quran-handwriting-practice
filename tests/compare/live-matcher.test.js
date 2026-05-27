@@ -223,21 +223,43 @@ test('matcher: long-damma ٗ accepted as inverted_damma', () => {
   assert.equal(r.accepted, true);
 });
 
-test('matcher: optionalLetters auto-fills marked letter with its harakat', () => {
-  // قُلْ — if ق is optional, the matcher should auto-consume it (with damma)
-  // and start awaiting the next slot (ل).
-  const m = new LiveMatcher(buildSkeleton('قُلْ'), { optionalLetters: ['ق'] });
+test('matcher: requiredLetters auto-fills non-required letters with their harakat', () => {
+  // قُلْ — if ق is NOT in requiredLetters, the matcher should auto-consume
+  // it (with damma) and start awaiting the next slot (ل).
+  const m = new LiveMatcher(buildSkeleton('قُلْ'), { requiredLetters: ['ل'] });
   const qaf = m.state.typed[0];
   assert.equal(qaf.letter, 'ق');
   assert.equal(qaf.auto, true);
+  // Auto-filled sukun uses the jazm glyph (canonical char in HARAKAT_CHAR).
   assert.equal(qaf.harakat, HARAKAT.damma);
   assert.equal(m.state.awaiting, 'letter');
-  // Next press should accept ل.
   assert.equal(m.tryLetter('ل').accepted, true);
 });
 
-test('matcher: optionalLetters does not affect non-optional letters', () => {
-  const m = new LiveMatcher(buildSkeleton('قُلْ'), { optionalLetters: ['س'] });
+test('matcher: null requiredLetters means every letter is required', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'));
   assert.equal(m.state.typed.length, 0);
   assert.equal(m.tryLetter('ق').accepted, true);
+});
+
+test('matcher: requiredHarakat auto-attaches non-required harakat to user-typed letter', () => {
+  // قُلْ with only "sukun" user-required → damma on ق auto-attaches.
+  const m = new LiveMatcher(buildSkeleton('قُلْ'), { requiredHarakat: ['sukun'] });
+  const r1 = m.tryLetter('ق');
+  assert.equal(r1.accepted, true);
+  const qaf = m.state.typed.find(t => t.letter === 'ق');
+  assert.equal(qaf.harakat, HARAKAT.damma);
+  assert.equal(m.state.awaiting, 'letter');
+  assert.equal(m.tryLetter('ل').accepted, true);
+  assert.equal(m.state.awaiting, 'harakat');
+  assert.equal(m.tryHarakat(HARAKAT.sukun).complete, true);
+});
+
+test('matcher: jazm (ۡ) accepted in place of Uthmani sukun', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'));
+  m.tryLetter('ق'); m.tryHarakat(HARAKAT.damma);
+  m.tryLetter('ل');
+  const r = m.tryHarakat('ۡ');
+  assert.equal(r.accepted, true);
+  assert.equal(r.complete, true);
 });

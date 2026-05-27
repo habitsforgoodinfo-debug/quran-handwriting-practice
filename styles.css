@@ -88,8 +88,8 @@ html, body {
 }
 .letter-chip__glyph { font-size: 20px; line-height: 1; }
 .letter-chip__name  { font-size: 10px; line-height: 1; }
-.letter-chip--required { background: #eef7e4; color: #2c8a02; border-color: #b8e08a; }
-.letter-chip--required .letter-chip__name { color: #2c8a02; }
+.letter-chip--required { background: #fff4b8; color: #8a6d00; border-color: #e8c84a; }
+.letter-chip--required .letter-chip__name { color: #8a6d00; }
 
 .range-complete-banner {
   color: #1c1c1c; padding: 16px 8px; text-align: center;

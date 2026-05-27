@@ -35,22 +35,25 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
   let matcher = null;
   let versePerfect = true;
   let reviewMode = false;
-  let optionalLetters = [];
+  let requiredLetters = null;
+  let requiredHarakat = null;
 
   function loadCurrentVerse() {
     words = parseVerse(rawText);
     translits = words.map(transliterateWord);
     skeleton = buildSkeleton(rawText, { isVerseStart: true });
-    matcher = new LiveMatcher(skeleton, { optionalLetters });
+    matcher = new LiveMatcher(skeleton, { requiredLetters, requiredHarakat });
     versePerfect = true;
     reviewMode = false;
     render();
     updateProgress();
   }
 
-  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt, slide = false, optionalLetters: opt }) {
+  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt, slide = false,
+                       requiredLetters: rl, requiredHarakat: rh }) {
     surah = s; surahName = sn; ayah = a; rawText = rt;
-    if (opt) optionalLetters = opt;
+    if (rl !== undefined) requiredLetters = rl;
+    if (rh !== undefined) requiredHarakat = rh;
     banner.style.display = 'none';
     banner.innerHTML = '';
     if (!rawText) {
