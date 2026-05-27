@@ -127,11 +127,12 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
     // Transliteration pane: one chip per word, current word highlighted,
     // sealed words greened, future words muted.
     translitPane.innerHTML = '';
+    let currentTranslitEl = null;
     for (let wi = 0; wi < translits.length; wi++) {
       const span = document.createElement('span');
       span.className = 'translit-word';
       if (wi < currentWord)      span.classList.add('translit-word--sealed');
-      else if (wi === currentWord) span.classList.add('translit-word--current');
+      else if (wi === currentWord) { span.classList.add('translit-word--current'); currentTranslitEl = span; }
       else                         span.classList.add('translit-word--future');
       span.textContent = translits[wi];
       translitPane.appendChild(span);
@@ -139,6 +140,7 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
 
     // User pane: Arabic letters as the user has typed.
     userPane.innerHTML = '';
+    let lastUserEl = null;
     for (const t of matcher.state.typed) {
       if (t.kind === 'wordEnd') { userPane.appendChild(document.createTextNode(' ')); continue; }
       const s = document.createElement('span');
@@ -148,7 +150,23 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
       if (t.auto) cls += ' auto';
       s.className = cls;
       userPane.appendChild(s);
+      lastUserEl = s;
     }
+
+    // Keep the active word + the cursor visible when the verse wraps to
+    // more lines than the box can show.
+    scrollIntoPane(translitPane, currentTranslitEl);
+    scrollIntoPane(userPane, lastUserEl);
+  }
+
+  function scrollIntoPane(pane, child) {
+    if (!child) return;
+    const pTop = pane.scrollTop;
+    const pBot = pTop + pane.clientHeight;
+    const cTop = child.offsetTop;
+    const cBot = cTop + child.offsetHeight;
+    if (cTop < pTop)      pane.scrollTop = Math.max(0, cTop - 4);
+    else if (cBot > pBot) pane.scrollTop = cBot - pane.clientHeight + 4;
   }
 
   function applyKeyResult(result) {

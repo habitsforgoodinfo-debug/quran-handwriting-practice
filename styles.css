@@ -19,6 +19,9 @@ html, body {
 #header select.surah { flex: 1 1 200px; min-width: 0; }
 #header input.from { width: 60px; }
 .header-stats { flex-basis: 100%; font-size: 12px; color: #5b5346; padding-top: 2px; }
+/* Surah accuracy badge — option label gets a percentage suffix, painted red
+   when the user is below 50% accuracy on that surah. */
+#header select.surah option.surah-opt--low { color: #c41a1a; }
 
 .practice-view { display: flex; flex-direction: column; gap: 8px; }
 
@@ -91,7 +94,8 @@ html, body {
   border: 1px solid #ece2cd; border-radius: 8px;
   padding: 6px 10px;
   width: 100%; box-sizing: border-box;
-  max-height: calc(2.6 * 1.6em + 12px);
+  height: calc(2 * 1.6em + 12px);
+  max-height: calc(2 * 1.6em + 12px);
   overflow-y: auto; overflow-x: hidden;
   overflow-wrap: anywhere; word-break: break-word;
 }

@@ -8,11 +8,14 @@ export function mountHeader(root, {
   root.innerHTML = '';
   const surahSel = document.createElement('select');
   surahSel.className = 'surah';
+  const surahOpts = new Map(); // surah number → <option>
   for (const s of SURAHS) {
     const opt = document.createElement('option');
     opt.value = String(s.number);
-    opt.textContent = `${s.number}. ${s.name_en} · ${s.name_ar}`;
+    opt.dataset.baseLabel = `${s.number}. ${s.name_en} · ${s.name_ar}`;
+    opt.textContent = opt.dataset.baseLabel;
     surahSel.appendChild(opt);
+    surahOpts.set(s.number, opt);
   }
   surahSel.value = String(initial.surah);
 
@@ -86,16 +89,33 @@ export function mountHeader(root, {
   surahSel.addEventListener('change', emit);
   ayahInput.addEventListener('change', emit);
 
-  function updateStats({ coverage, accuracy }) {
-    const cov = coverage
-      ? `${coverage.versesWritten} ayahs · ${coverage.percent}% of Quran`
-      : '';
-    const acc = (accuracy && accuracy.percent != null)
+  // Stats banner: only the current surah's progress + accuracy.
+  function updateStats({ surah, surahName, surahVerses, ayahsWritten, accuracy }) {
+    if (!surah || !surahVerses) { statsEl.textContent = ''; return; }
+    const pct = Math.min(100, Math.round((ayahsWritten / surahVerses) * 100));
+    const accPart = (accuracy && accuracy.percent != null)
       ? ` · ${accuracy.percent}% accuracy`
       : '';
-    statsEl.textContent = cov + acc;
+    statsEl.textContent =
+      `${surahName}: ${ayahsWritten}/${surahVerses} ayahs (${pct}% of surah)${accPart}`;
+  }
+
+  // Per-surah accuracy badges in the dropdown. accMap is { "1": {hits, attempts}, ... }
+  function updateSurahAccuracyMap(accMap) {
+    for (const [num, opt] of surahOpts) {
+      const e = accMap?.[String(num)];
+      const base = opt.dataset.baseLabel;
+      if (!e || !e.attempts) {
+        opt.textContent = base;
+        opt.classList.remove('surah-opt--low');
+        continue;
+      }
+      const pct = Math.round((e.hits / e.attempts) * 100);
+      opt.textContent = `${base} — ${pct}%`;
+      opt.classList.toggle('surah-opt--low', pct < 50);
+    }
   }
 
   emit();
-  return { updateStats, setReviewMode };
+  return { updateStats, updateSurahAccuracyMap, setReviewMode };
 }

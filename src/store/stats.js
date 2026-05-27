@@ -14,12 +14,24 @@ export async function recordError({ kind, value }, deps = { counterIncrement }) 
   await deps.counterIncrement(store, value);
 }
 
-export async function recordAttempt({ correct } = { correct: true },
+export async function recordAttempt({ correct, surah } = { correct: true },
                                     deps = { kvGet, kvPut }) {
-  const cur = (await deps.kvGet('accCounters')) || { hits: 0, attempts: 0 };
-  cur.attempts++;
-  if (correct) cur.hits++;
-  await deps.kvPut('accCounters', cur);
+  // Overall counter (kept for backwards compatibility).
+  const overall = (await deps.kvGet('accCounters')) || { hits: 0, attempts: 0 };
+  overall.attempts++;
+  if (correct) overall.hits++;
+  await deps.kvPut('accCounters', overall);
+
+  // Per-surah counter, used by the header banner + surah-dropdown badges.
+  if (surah != null) {
+    const map = (await deps.kvGet('accBySurah')) || {};
+    const key = String(surah);
+    const entry = map[key] || { hits: 0, attempts: 0 };
+    entry.attempts++;
+    if (correct) entry.hits++;
+    map[key] = entry;
+    await deps.kvPut('accBySurah', map);
+  }
 }
 
 export async function getAccuracy(deps = { kvGet }) {
@@ -30,6 +42,29 @@ export async function getAccuracy(deps = { kvGet }) {
     attempts: cur.attempts,
     percent: Math.round((cur.hits / cur.attempts) * 100)
   };
+}
+
+export async function getSurahAccuracy(surah, deps = { kvGet }) {
+  const map = (await deps.kvGet('accBySurah')) || {};
+  const e = map[String(surah)] || { hits: 0, attempts: 0 };
+  if (e.attempts === 0) return { hits: 0, attempts: 0, percent: null };
+  return { hits: e.hits, attempts: e.attempts,
+    percent: Math.round((e.hits / e.attempts) * 100) };
+}
+
+export async function getAllSurahAccuracy(deps = { kvGet }) {
+  return (await deps.kvGet('accBySurah')) || {};
+}
+
+export async function getSurahProgress(surah, deps = { verseStoreGetAll }) {
+  const rows = await deps.verseStoreGetAll();
+  let written = 0;
+  for (const r of rows) {
+    const v = r.value;
+    if (!v || v.skipped) continue;
+    if (v.surah === surah) written++;
+  }
+  return written;
 }
 
 export async function getStats(deps = { counterAll }) {
@@ -47,6 +82,7 @@ export async function resetStats(deps = {
     deps.counterClear('letterErrors'),
     deps.counterClear('diacriticErrors'),
     deps.kvPut('accCounters', { hits: 0, attempts: 0 }),
+    deps.kvPut('accBySurah', {}),
     deps.verseStoreClear()
   ]);
 }

@@ -1,6 +1,10 @@
 # Quran Handwriting Practice
 
-A mobile-first Progressive Web App for practicing handwritten Arabic Quran verses, with letter-by-letter feedback against the canonical text.
+A mobile-first Progressive Web App for learning the Quran by typing each
+letter and harakat of every verse from an on-screen Arabic keypad. The
+matcher accepts only the correct keystroke (with configurable auto-fill
+for letters and diacritics the user does not want to drill), records
+per-surah accuracy, and runs a short retry test after every 20 verses.
 
 ## Run locally
 
@@ -18,18 +22,22 @@ Then open <http://localhost:8000>.
 node --test tests/
 ```
 
-Only pure-logic modules are covered by automated tests. UI / DOM / canvas modules are tested manually in the browser.
+Only pure-logic modules are covered by automated tests (parser, skeleton,
+live-matcher, transliterate, store, integration). UI / DOM / canvas
+modules are exercised manually in the browser.
+
+## Service worker
+
+`service-worker.js` precaches the JSON Quran data and PWA assets, and
+serves JS modules cache-first. The `CACHE` constant at the top is bumped
+on every release that ships behavior or layout changes — phones reload
+the new SW on the second page load after each bump.
 
 ## Documentation
 
-- Design spec: `docs/superpowers/specs/2026-05-06-quran-handwriting-practice-design.md`
-- Implementation plan: `docs/superpowers/plans/2026-05-06-quran-handwriting-practice.md`
-
-## v1 Known Limitations
-
-- Undo is not available in keypad mode — use Clear before submitting if you want to redo input.
-- Persisted error stats are recorded immediately on submit; there is no rollback. Use Settings → Reset stats for a clean slate.
-- Settings has reciter / silent-letter / stroke-width / reset-stats. Font selector and stroke-color picker are deferred.
-- Mid-session reload does not restore the last session.
-- Landscape orientation uses the same stacked layout as portrait (no side-by-side variant yet).
-- Icons are placeholders; replace before publishing.
+- **`docs/ARCHITECTURE.md`** — current design (data flow, modules, data
+  model, practice loop, settings, retry test, rolling strip). Refreshed
+  in lockstep with the code; the canonical reference for handing off to
+  another agent.
+- Historical plans and specs live under `docs/superpowers/`. Those are a
+  record of how the app got here, not the current state.

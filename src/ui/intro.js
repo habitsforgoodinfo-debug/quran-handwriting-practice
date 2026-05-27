@@ -16,17 +16,18 @@ const STEPS = [
       "The verse will then appear in the middle of the screen."
   },
   {
-    title: 'Read, then write',
+    title: 'Read / listen, then write',
     body:
       "The upper box shows the verse in English letters — that tells you what to write. " +
       "The middle box is empty. That is where your writing will appear. " +
-      "Use the keyboard at the bottom to type the Arabic letters and marks, one at a time."
+      "If you would also like to hear the verse first, tap the ▶ button under the keyboard. " +
+      "Then use the keyboard at the bottom to type the Arabic letters and harakat, one at a time."
   },
   {
     title: "Help when you're stuck",
     body:
       "Only the correct key is accepted. " +
-      "If you press the wrong key twice in a row, the correct key will glow yellow. " +
+      "If you press the wrong key twice in a row, the correct key will glow green. " +
       "Just tap the glowing key to keep going."
   },
   {

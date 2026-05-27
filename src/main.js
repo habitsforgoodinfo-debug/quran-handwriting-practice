@@ -10,7 +10,8 @@ import { mountIntro } from './ui/intro.js';
 import { pickRapidFireChallenge } from './ui/rapid-fire.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
-  recordError, recordAttempt, getAccuracy, getCoverage,
+  recordError, recordAttempt,
+  getSurahAccuracy, getSurahProgress, getAllSurahAccuracy,
   markVerseComplete, markVerseSkipped, resetStats,
   getCompletedVerses
 } from './store/stats.js';
@@ -40,18 +41,9 @@ async function init() {
     onVerseComplete: handleVerseComplete
   });
 
+  // Rolling strip starts empty every session — it shows only the verses
+  // the user writes during the current sitting.
   rollingApi = mountRollingStrip(rollingEl);
-  // Seed with the most recent verses already in the book.
-  getCompletedVerses()
-    .then(list => {
-      const recent = (list || [])
-        .filter(v => !v.skipped && v.rawText)
-        .sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0))
-        .slice(-30)
-        .map(v => v.rawText);
-      rollingApi.setHistory(recent);
-    })
-    .catch(() => {});
 
   keypadApi = mountKeypad(keypadEl, {
     onLetter:    handleLetter,
@@ -82,8 +74,19 @@ async function init() {
 }
 
 async function refreshHeaderStats() {
-  const [coverage, accuracy] = await Promise.all([getCoverage(), getAccuracy()]);
-  headerApi.updateStats({ coverage, accuracy });
+  const [accuracy, written, accBySurah] = await Promise.all([
+    getSurahAccuracy(state.surah),
+    getSurahProgress(state.surah),
+    getAllSurahAccuracy()
+  ]);
+  headerApi.updateStats({
+    surah: state.surah,
+    surahName: state.surahName,
+    surahVerses: state.surahMax,
+    ayahsWritten: written,
+    accuracy
+  });
+  headerApi.updateSurahAccuracyMap(accBySurah);
 }
 
 function refreshHints() {
@@ -117,12 +120,12 @@ function handleLetter(ch) {
     keypadApi.flashWrong(ch);
     const expected = m.skeleton[m.state.slotIdx]?.letter || ch;
     recordError({ kind: 'letter', value: expected });
-    recordAttempt({ correct: false });
+    recordAttempt({ correct: false, surah: state.surah });
     practiceApi.noteWrongAttempt();
     refreshHints();
     return;
   }
-  recordAttempt({ correct: true });
+  recordAttempt({ correct: true, surah: state.surah });
   practiceApi.applyKeyResult(r);
   refreshHints();
 }
@@ -134,12 +137,12 @@ function handleHarakat(ch) {
   if (!r.accepted) {
     keypadApi.flashWrong(ch);
     recordError({ kind: 'diacritic', value: ch });
-    recordAttempt({ correct: false });
+    recordAttempt({ correct: false, surah: state.surah });
     practiceApi.noteWrongAttempt();
     refreshHints();
     return;
   }
-  recordAttempt({ correct: true });
+  recordAttempt({ correct: true, surah: state.surah });
   practiceApi.applyKeyResult(r);
   refreshHints();
 }
@@ -399,6 +402,7 @@ function handleRangeChange({ surah, fromAyah }) {
   state.surahMax = meta?.verses || 1;
   state.surahName = meta?.name_en || `Surah ${surah}`;
   loadCurrentVerse();
+  refreshHeaderStats();
 }
 
 function openSettings() {
