@@ -1,5 +1,6 @@
 import { getCompletedVerses } from '../store/stats.js';
 import { getSurah } from '../data/surah-metadata.js';
+import { cleanVerseForDisplay } from '../verse/parser.js';
 
 export async function mountMyBook(root) {
   const modal = document.createElement('div');
@@ -72,7 +73,7 @@ export async function mountMyBook(root) {
       }
       const text = document.createElement('span');
       text.className = 'my-book__text' + (v.perfect ? ' my-book__text--perfect' : '');
-      text.textContent = v.rawText;
+      text.textContent = cleanVerseForDisplay(v.rawText);
       const marker = document.createElement('span');
       marker.className = 'my-book__marker';
       marker.textContent = `۝${v.ayah} `;

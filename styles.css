@@ -78,23 +78,26 @@ html, body {
 .user-glyph.silent { color: #9aa0a6; opacity: 0.7; }
 .user-glyph.auto { color: #2c8a02; opacity: 0.55; }
 
-/* Rolling strip — tiny scrollable history of completed verses between the
-   canvas and the keypad. Newest line sits anchored at the bottom. */
+/* Rolling strip — a continuous mushaf-style running paragraph of the
+   verses the user has written, between the canvas and the keypad. */
 #rolling-strip { display: block; }
 .rolling-strip {
   font-family: 'Amiri','NotoNaskhArabic',serif;
-  direction: rtl; text-align: right;
-  font-size: 14px; line-height: 1.5;
+  direction: rtl; text-align: justify;
+  text-align-last: right;
+  font-size: 14px; line-height: 1.6;
   color: #5b5346;
   background: #fbf6ec;
   border: 1px solid #ece2cd; border-radius: 8px;
-  padding: 4px 8px;
-  max-height: calc(2.4 * 1.5em + 8px);
+  padding: 6px 10px;
+  width: 100%; box-sizing: border-box;
+  max-height: calc(2.6 * 1.6em + 12px);
   overflow-y: auto; overflow-x: hidden;
   overflow-wrap: anywhere; word-break: break-word;
 }
-.rolling-strip__line { padding: 1px 0; }
-.rolling-strip__line:last-child { color: #1c1c1c; font-weight: 600; }
+.rolling-strip__text { padding: 0; }
+.rolling-strip__text--latest { color: #1c1c1c; font-weight: 700; }
+.rolling-strip__marker { color: #b69a5c; }
 
 .required-letters { display: flex; flex-direction: column; gap: 6px; }
 .required-letters__title { font-size: 13px; color: #4a4a4a; }
@@ -274,6 +277,30 @@ html, body {
   border-radius: 8px; padding: 10px 18px; font-weight: 700; font-size: 14px;
   cursor: pointer;
 }
+
+/* Step-by-step tutorial (replaces the old long welcome modal) */
+.intro__panel--tutorial { gap: 14px; max-width: 520px; }
+.intro__progress {
+  text-transform: uppercase; letter-spacing: 1px;
+  font-size: 11px; color: #8a6300; font-weight: 700;
+}
+.intro__step-title {
+  margin: 0; font-size: 22px; color: #1c1c1c; line-height: 1.25;
+}
+.intro__step-body {
+  font-size: 16px; line-height: 1.55; color: #1c1c1c;
+  white-space: pre-line;
+}
+.intro__check--final { padding-top: 4px; }
+.intro__nav { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
+.intro__btn {
+  border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 15px;
+  cursor: pointer; border: 1px solid transparent;
+}
+.intro__btn--back  { background: #f6f1e6; color: #5b5346; border-color: #ddd1b8; }
+.intro__btn--back:disabled { opacity: 0.4; cursor: default; }
+.intro__btn--next  { background: #58cc02; color: white; border-color: #4ab300; }
+.intro__btn--start { background: #58cc02; color: white; border-color: #4ab300; }
 
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff4b4b; color: white; padding: 10px 16px; border-radius: 8px; z-index: 200; display: flex; align-items: center; gap: 8px; }
 .toast button.toast-retry   { background: white; color: #ff4b4b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }

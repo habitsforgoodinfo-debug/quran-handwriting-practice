@@ -86,6 +86,19 @@ function stripFormatting(s) {
   return s.replace(FORMATTING_RE, '').replace(PUA_RE, '').replace(KASHIDA_RE, '');
 }
 
+// What to drop when *displaying* an already-written verse back to the
+// user (rolling strip, My Book). Removes:
+//   - Private-use-area glyphs (font-specific verse-number ornaments that
+//     render as tofu in most system fonts)
+//   - Quranic small-high annotations like U+06D6..U+06ED (silent-letter
+//     markers, waqf signs, etc.) — useful while parsing, but visually
+//     noisy as tiny boxes when reading the verse back.
+const DISPLAY_STRIP_RE = /[ۖ-ۭ-]/g;
+export function cleanVerseForDisplay(s) {
+  if (!s) return s;
+  return s.replace(DISPLAY_STRIP_RE, '').replace(/\s+/g, ' ').trim();
+}
+
 export function parseWord(word) {
   const glyphs = [];
   const codepoints = Array.from(word);
