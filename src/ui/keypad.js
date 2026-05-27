@@ -26,9 +26,9 @@ const LETTER_TIPS = {
 // Google / iOS Arabic mobile keyboard arrangement. ذ added explicitly
 // (no per-letter long-press anywhere in the keypad).
 const LAYOUT = [
-  ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج','د','ذ'],
+  ['ض','ص','ث','ق','ف','غ','ع','ه','خ','ح','ج'],
   ['ش','س','ي','ب','ل','ا','ت','ن','م','ك','ط'],
-  ['ئ','ء','ؤ','ر','لا','ى','ة','و','ز','ظ','آ','أ','إ']
+  ['ذ','ء','ر','ة','و','ز','ظ','د']
 ];
 
 const LONG_PRESS_MS = 450;

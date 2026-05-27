@@ -1,34 +1,18 @@
 import { RECITERS } from '../audio/player.js';
+import { ALL_HARAKAT as ALL_HARAKAT_NAMES } from '../store/settings.js';
 
-// Every Arabic letter the user might encounter, with a friendly English name.
-// Order roughly matches the Arabic alphabet, with the hamza variants and
-// alif maqsura at the end.
+// Letter order mirrors the keypad rows top-to-bottom so the user can scan
+// the same arrangement in both places.
 const TOGGLEABLE_LETTERS = [
-  ['ا','alif'], ['ب','ba'],  ['ت','ta'],   ['ث','tha'],  ['ج','jeem'],
-  ['ح','haa'], ['خ','kha'], ['د','dal'],  ['ذ','zal'],  ['ر','ra'],
-  ['ز','za'],  ['س','seen'], ['ش','sheen'],['ص','suad'], ['ض','duad'],
-  ['ط','tua'], ['ظ','zua'], ['ع','ain'],  ['غ','ghain'],['ف','fa'],
-  ['ق','qaf'], ['ك','kaf'], ['ل','lam'],  ['م','meem'], ['ن','noon'],
-  ['ه','ha'],  ['و','waw'], ['ي','ya'],   ['ء','hamza'],['ة','ta-marbuta'],
-  ['ى','alif-maqsura'], ['أ','alif-hamza-above'], ['إ','alif-hamza-below'],
-  ['آ','alif-madda'], ['ؤ','waw-hamza'], ['ئ','ya-hamza']
-];
-
-// Harakat (diacritics) the user can opt out of. Display glyph uses a
-// kashida to give it a baseline like in the keypad.
-const TOGGLEABLE_HARAKAT = [
-  ['fatha',          'ـَ',  'fatha'],
-  ['kasra',          'ـِ',  'kasra'],
-  ['damma',          'ـُ',  'damma'],
-  ['sukun',          'ـۡ',  'sukun (jazm)'],
-  ['shadda',         'ـّ',  'shadda'],
-  ['tanween_fath',   'ـً',  'tanween fath'],
-  ['tanween_kasr',   'ـٍ',  'tanween kasr'],
-  ['tanween_damm',   'ـٌ',  'tanween damm'],
-  ['dagger_alif',    'ـٰ',  'dagger alif'],
-  ['maddah_above',   'ـٓ',  'maddah'],
-  ['subscript_alef', 'ـٖ',  'subscript alef'],
-  ['inverted_damma', 'ـٗ',  'inverted damma']
+  // Row 1
+  ['ض','duad'], ['ص','suad'], ['ث','tha'],  ['ق','qaf'], ['ف','fa'],
+  ['غ','ghain'],['ع','ain'],  ['ه','ha'],   ['خ','kha'], ['ح','haa'], ['ج','jeem'],
+  // Row 2
+  ['ش','sheen'],['س','seen'], ['ي','ya'],   ['ب','ba'],  ['ل','lam'],
+  ['ا','alif'], ['ت','ta'],   ['ن','noon'], ['م','meem'],['ك','kaf'], ['ط','tua'],
+  // Row 3
+  ['ذ','zal'],  ['ء','hamza'],['ر','ra'],   ['ة','ta-marbuta'],
+  ['و','waw'],  ['ز','za'],   ['ظ','zua'],  ['د','dal']
 ];
 
 export function mountSettingsModal(root, { settings, onChange, onResetStats, onClose }) {
@@ -127,35 +111,18 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   }
   lettersBlock.append(lettersTitle, lettersGrid);
 
-  // ---- Required harakat ----
-  const harakatBlock = document.createElement('div');
-  harakatBlock.className = 'required-letters';
-  const harakatTitle = document.createElement('div');
-  harakatTitle.className = 'required-letters__title';
-  harakatTitle.textContent = 'Required harakat (selected must be written; others are auto-filled)';
-  const harakatGrid = document.createElement('div');
-  harakatGrid.className = 'required-letters__grid';
-
-  const requiredHarakatSet = new Set(settings.requiredHarakat || []);
-  function emitHarakat() { onChange({ requiredHarakat: [...requiredHarakatSet] }); }
-
-  for (const [name, glyph, label] of TOGGLEABLE_HARAKAT) {
-    const chip = document.createElement('button');
-    chip.type = 'button';
-    chip.className = 'letter-chip' + (requiredHarakatSet.has(name) ? ' letter-chip--required' : '');
-    chip.dataset.harakat = name;
-    chip.setAttribute('title', label);
-    const g = document.createElement('span'); g.className = 'letter-chip__glyph'; g.textContent = glyph;
-    const n = document.createElement('span'); n.className = 'letter-chip__name';  n.textContent = label;
-    chip.append(g, n);
-    chip.addEventListener('click', () => {
-      if (requiredHarakatSet.has(name)) { requiredHarakatSet.delete(name); chip.classList.remove('letter-chip--required'); }
-      else                              { requiredHarakatSet.add(name);    chip.classList.add('letter-chip--required'); }
-      emitHarakat();
-    });
-    harakatGrid.appendChild(chip);
-  }
-  harakatBlock.append(harakatTitle, harakatGrid);
+  // ---- Auto-fill all harakat ----
+  const labAutoHarakat = document.createElement('label');
+  labAutoHarakat.append('Auto-fill all harakat (skip typing diacritics) ');
+  const autoHarakat = document.createElement('input');
+  autoHarakat.type = 'checkbox';
+  autoHarakat.className = 'auto-harakat';
+  // Checked = no harakat are required = all auto-filled.
+  autoHarakat.checked = Array.isArray(settings.requiredHarakat) && settings.requiredHarakat.length === 0;
+  labAutoHarakat.appendChild(autoHarakat);
+  autoHarakat.addEventListener('change', () => {
+    onChange({ requiredHarakat: autoHarakat.checked ? [] : ALL_HARAKAT_NAMES });
+  });
 
   const resetBtn = document.createElement('button');
   resetBtn.className = 'reset-stats';
@@ -167,7 +134,7 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
 
   panel.append(
     h, labReciter, labHint, labAutoPlay, labSilent, labWidth,
-    lettersBlock, harakatBlock,
+    lettersBlock, labAutoHarakat,
     resetBtn, closeBtn
   );
   modal.appendChild(panel);
