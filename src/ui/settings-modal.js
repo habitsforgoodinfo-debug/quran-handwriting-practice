@@ -111,6 +111,16 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   }
   lettersBlock.append(lettersTitle, lettersGrid);
 
+  // ---- Quick retry test every 20 verses ----
+  const labQuickTest = document.createElement('label');
+  labQuickTest.append('Quick retry test after every 20 verses ');
+  const quickTest = document.createElement('input');
+  quickTest.type = 'checkbox';
+  quickTest.className = 'quick-test';
+  quickTest.checked = settings.quickTestEvery20 !== false;
+  labQuickTest.appendChild(quickTest);
+  quickTest.addEventListener('change', () => onChange({ quickTestEvery20: quickTest.checked }));
+
   // ---- Auto-fill all harakat ----
   const labAutoHarakat = document.createElement('label');
   labAutoHarakat.append('Auto-fill all harakat (skip typing diacritics) ');
@@ -134,6 +144,7 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
 
   panel.append(
     h, labReciter, labHint, labAutoPlay, labSilent, labWidth,
+    labQuickTest,
     lettersBlock, labAutoHarakat,
     resetBtn, closeBtn
   );

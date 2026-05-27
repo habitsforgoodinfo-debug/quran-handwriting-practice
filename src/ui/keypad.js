@@ -3,18 +3,20 @@ import { vibrateTap, vibrateWrong } from './feedback.js';
 // Each harakat key: short tap fires `char`; long-press (where defined)
 // fires `longChar` — the elongated form (Indo-Pak long-vowel marks).
 const HARAKAT_BASE = [
-  { name: 'fatha',          char: 'َ',  longChar: 'ٰ' },   // long-press → dagger alif (long fatha)
-  { name: 'damma',          char: 'ُ',  longChar: 'ٗ' },   // long-press → inverted damma (long damma)
-  { name: 'kasra',          char: 'ِ',  longChar: 'ٖ' },   // long-press → subscript alef (long kasra)
+  { name: 'fatha',          char: 'َ'  },                  // single-tap only
+  { name: 'damma',          char: 'ُ'  },                  // single-tap only
+  { name: 'kasra',          char: 'ِ'  },                  // single-tap only
   { name: 'sukun',          char: 'ۡ'  },                  // Indo-Pak jazm (U+06E1)
   { name: 'shadda',         char: 'ّ'  },
   { name: 'tanween_fath',   char: 'ً'  },
   { name: 'tanween_damm',   char: 'ٌ'  },
   { name: 'tanween_kasr',   char: 'ٍ'  },
   { name: 'dagger_alif',    char: 'ٰ'  },
-  { name: 'maddah_above',   char: 'ٓ',  longChar: 'ۤ' },    // long-press → Indo-Pak high madda (6-count)
-  { name: 'subscript_alef', char: 'ٖ'  },                  // long kasra (also reachable via long-press on kasra)
-  { name: 'inverted_damma', char: 'ٗ'  }                   // long damma (also reachable via long-press on damma)
+  { name: 'subscript_alef', char: 'ٖ'  },
+  { name: 'inverted_damma', char: 'ٗ'  },
+  // Maddah sits at the far right and keeps its long-press alternate
+  // (4-count → ٓ on tap, 6-count → ۤ on long-press).
+  { name: 'maddah_above',   char: 'ٓ',  longChar: 'ۤ' }
 ];
 
 const LETTER_TIPS = {

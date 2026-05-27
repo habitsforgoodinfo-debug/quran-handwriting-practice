@@ -36,8 +36,10 @@ html, body {
   padding: 8px 6px;
   background: #fffaf2;
   border-radius: 8px;
+  width: 100%; box-sizing: border-box;
+  min-height: calc(2 * 1.55em + 18px);
   max-height: calc(2 * 1.55em + 18px);
-  overflow-y: auto;
+  overflow-y: auto; overflow-x: hidden;
   transition: background 250ms ease, transform 220ms ease, opacity 220ms ease;
 }
 .translit-pane.translit-pane--celebrate {
@@ -63,9 +65,11 @@ html, body {
   direction: rtl; text-align: right;
   font-size: 30px; line-height: 1.8;
   padding: 8px 6px;
+  width: 100%; box-sizing: border-box;
   min-height: calc(2 * 1.8em + 18px);
   max-height: calc(2 * 1.8em + 18px);
-  overflow-y: auto;
+  overflow-y: auto; overflow-x: hidden;
+  overflow-wrap: anywhere; word-break: break-word;
   background: #ffffff;
   border-radius: 8px; border: 1px solid #eee2cf;
   transition: transform 220ms ease, opacity 220ms ease;
@@ -73,6 +77,24 @@ html, body {
 .user-pane.user-pane--sliding { transform: translateX(-30px); opacity: 0; }
 .user-glyph.silent { color: #9aa0a6; opacity: 0.7; }
 .user-glyph.auto { color: #2c8a02; opacity: 0.55; }
+
+/* Rolling strip — tiny scrollable history of completed verses between the
+   canvas and the keypad. Newest line sits anchored at the bottom. */
+#rolling-strip { display: block; }
+.rolling-strip {
+  font-family: 'Amiri','NotoNaskhArabic',serif;
+  direction: rtl; text-align: right;
+  font-size: 14px; line-height: 1.5;
+  color: #5b5346;
+  background: #fbf6ec;
+  border: 1px solid #ece2cd; border-radius: 8px;
+  padding: 4px 8px;
+  max-height: calc(2.4 * 1.5em + 8px);
+  overflow-y: auto; overflow-x: hidden;
+  overflow-wrap: anywhere; word-break: break-word;
+}
+.rolling-strip__line { padding: 1px 0; }
+.rolling-strip__line:last-child { color: #1c1c1c; font-weight: 600; }
 
 .required-letters { display: flex; flex-direction: column; gap: 6px; }
 .required-letters__title { font-size: 13px; color: #4a4a4a; }

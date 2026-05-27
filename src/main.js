@@ -3,6 +3,7 @@ import { getSurah } from './data/surah-metadata.js';
 import { mountHeader } from './ui/header.js';
 import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
+import { mountRollingStrip } from './ui/rolling-strip.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
 import { mountMyBook } from './ui/my-book.js';
 import { mountIntro } from './ui/intro.js';
@@ -21,7 +22,7 @@ const state = {
   settings: null
 };
 const player = new AyahPlayer();
-let practiceApi, keypadApi, headerApi;
+let practiceApi, keypadApi, headerApi, rollingApi;
 
 async function init() {
   if ('serviceWorker' in navigator) {
@@ -32,11 +33,25 @@ async function init() {
 
   const headerEl   = document.getElementById('header');
   const practiceEl = document.getElementById('verse-display');
+  const rollingEl  = document.getElementById('rolling-strip');
   const keypadEl   = document.getElementById('keypad-view');
 
   practiceApi = mountPracticeView(practiceEl, {
     onVerseComplete: handleVerseComplete
   });
+
+  rollingApi = mountRollingStrip(rollingEl);
+  // Seed with the most recent verses already in the book.
+  getCompletedVerses()
+    .then(list => {
+      const recent = (list || [])
+        .filter(v => !v.skipped && v.rawText)
+        .sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0))
+        .slice(-30)
+        .map(v => v.rawText);
+      rollingApi.setHistory(recent);
+    })
+    .catch(() => {});
 
   keypadApi = mountKeypad(keypadEl, {
     onLetter:    handleLetter,
@@ -226,12 +241,108 @@ function handleNextAyah() {
   advanceToNextAyah({ skipped: true });
 }
 
+const BATCH_SIZE = 20;
+const batchState = {
+  count: 0,
+  mistakes: [],            // [{ surah, ayah, rawText }]
+  inRetryMode: false,
+  retryQueue: [],
+  resumeSurah: null,
+  resumeAyah: null
+};
+
 function handleVerseComplete({ surah, ayah, rawText, perfect }) {
   chimeComplete();
+  rollingApi?.pushVerse(rawText);
   markVerseComplete({ surah, ayah, rawText, perfect })
     .then(() => refreshHeaderStats())
     .catch(err => console.warn('markVerseComplete failed:', err));
+
+  if (batchState.inRetryMode) {
+    advanceRetryQueue();
+    return;
+  }
+
+  batchState.count++;
+  if (!perfect) batchState.mistakes.push({ surah, ayah, rawText });
+
+  if (state.settings.quickTestEvery20 && batchState.count >= BATCH_SIZE) {
+    if (batchState.mistakes.length > 0) {
+      promptBatchRetry();
+      return;
+    }
+    batchState.count = 0;
+    batchState.mistakes = [];
+  }
+
   advanceToNextAyah({ skipped: false });
+}
+
+function promptBatchRetry() {
+  const n = batchState.mistakes.length;
+  practiceApi.showPrompt(
+    `Quick check — you slipped on ${n} of the last ${BATCH_SIZE} verses. Want to retry them now?`,
+    [
+      { label: `Retry ${n} verses`, cls: 'primary',  onClick: startRetry },
+      { label: 'Skip',               cls: 'secondary', onClick: skipRetry }
+    ]
+  );
+}
+
+function startRetry() {
+  batchState.inRetryMode = true;
+  batchState.retryQueue = [...batchState.mistakes];
+  // Remember where to resume after retries are done.
+  const nextAyah = state.ayah + 1;
+  if (nextAyah > state.surahMax) {
+    batchState.resumeSurah = state.surah;
+    batchState.resumeAyah  = state.surahMax; // surah will surface its end banner
+  } else {
+    batchState.resumeSurah = state.surah;
+    batchState.resumeAyah  = nextAyah;
+  }
+  loadNextRetry();
+}
+
+function loadNextRetry() {
+  const next = batchState.retryQueue.shift();
+  if (!next) { exitRetryFlow(); return; }
+  jumpToVerse(next.surah, next.ayah);
+}
+
+function advanceRetryQueue() {
+  if (batchState.retryQueue.length === 0) {
+    exitRetryFlow();
+    return;
+  }
+  loadNextRetry();
+}
+
+function skipRetry() {
+  batchState.count = 0;
+  batchState.mistakes = [];
+  advanceToNextAyah({ skipped: false });
+}
+
+function exitRetryFlow() {
+  batchState.inRetryMode = false;
+  batchState.retryQueue = [];
+  batchState.count = 0;
+  batchState.mistakes = [];
+  if (batchState.resumeSurah != null) {
+    const s = batchState.resumeSurah, a = batchState.resumeAyah;
+    batchState.resumeSurah = batchState.resumeAyah = null;
+    jumpToVerse(s, a);
+  }
+}
+
+function jumpToVerse(surah, ayah, slide = true) {
+  const meta = getSurah(surah);
+  state.surah = surah;
+  state.ayah  = ayah;
+  state.surahMax  = meta?.verses || 1;
+  state.surahName = meta?.name_en || `Surah ${surah}`;
+  loadCurrentVerse({ slide });
 }
 
 function advanceToNextAyah({ slide = true } = {}) {

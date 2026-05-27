@@ -76,14 +76,14 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
     }
   }
 
-  function showRangeEnd(buttons = []) {
+  function showBanner(message, buttons = []) {
     matcher = null;
     translitPane.innerHTML = '';
     userPane.innerHTML = '';
     progressStrip.update(null);
     banner.innerHTML = '';
     const msg = document.createElement('div'); msg.className = 'banner-msg';
-    msg.textContent = '✓ surah complete — beautiful work';
+    msg.textContent = message;
     banner.appendChild(msg);
     const row = document.createElement('div'); row.className = 'banner-actions';
     for (const b of buttons) {
@@ -95,6 +95,12 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
     }
     banner.appendChild(row);
     banner.style.display = '';
+  }
+  function showRangeEnd(buttons = []) {
+    showBanner('✓ surah complete — beautiful work', buttons);
+  }
+  function showPrompt(message, buttons = []) {
+    showBanner(message, buttons);
   }
 
   function getCurrentWordIdx() {
@@ -206,7 +212,7 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
     applyKeyResult,
     noteWrongAttempt,
     hasInProgressInput,
-    showRangeEnd,
+    showRangeEnd, showPrompt,
     showReview, exitReview,
     isReviewing: () => reviewMode,
     refreshHeatmap: () => updateProgress(),

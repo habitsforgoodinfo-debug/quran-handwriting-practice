@@ -32,7 +32,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   hideIntro: false,
   autoPlayOnAyahLoad: false,
   requiredLetters: DEFAULT_REQUIRED_LETTERS,
-  requiredHarakat: ALL_HARAKAT
+  requiredHarakat: ALL_HARAKAT,
+  quickTestEvery20: true
 });
 
 function migrate(stored) {
