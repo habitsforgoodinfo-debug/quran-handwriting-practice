@@ -264,7 +264,8 @@ function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
     surahName: state.surahName,
     ayah: state.ayah,
     rawText,
-    slide
+    slide,
+    optionalLetters: state.settings.optionalLetters || []
   });
   refreshHints();
   if (autoPlay || state.settings.autoPlayOnAyahLoad) {
@@ -291,7 +292,17 @@ function handleRangeChange({ surah, fromAyah }) {
 function openSettings() {
   mountSettingsModal(document.body, {
     settings: state.settings,
-    onChange: async (patch) => { state.settings = await updateSettings(patch); refreshHints(); },
+    onChange: async (patch) => {
+      const prevOpt = state.settings.optionalLetters || [];
+      state.settings = await updateSettings(patch);
+      if ('optionalLetters' in patch) {
+        const next = state.settings.optionalLetters || [];
+        if (next.length !== prevOpt.length || next.some((c, i) => c !== prevOpt[i])) {
+          loadCurrentVerse();
+        }
+      }
+      refreshHints();
+    },
     onResetStats: async () => { await resetStats(); refreshHeaderStats(); }
   });
 }

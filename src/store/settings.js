@@ -10,7 +10,8 @@ export const DEFAULT_SETTINGS = Object.freeze({
   hintPolicy: 'auto',
   strict: false,
   hideIntro: false,
-  autoPlayOnAyahLoad: false
+  autoPlayOnAyahLoad: false,
+  optionalLetters: []
 });
 
 function migrate(stored) {

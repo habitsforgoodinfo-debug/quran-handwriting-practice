@@ -222,3 +222,22 @@ test('matcher: long-damma ٗ accepted as inverted_damma', () => {
   const r = m.tryHarakat('ٗ');
   assert.equal(r.accepted, true);
 });
+
+test('matcher: optionalLetters auto-fills marked letter with its harakat', () => {
+  // قُلْ — if ق is optional, the matcher should auto-consume it (with damma)
+  // and start awaiting the next slot (ل).
+  const m = new LiveMatcher(buildSkeleton('قُلْ'), { optionalLetters: ['ق'] });
+  const qaf = m.state.typed[0];
+  assert.equal(qaf.letter, 'ق');
+  assert.equal(qaf.auto, true);
+  assert.equal(qaf.harakat, HARAKAT.damma);
+  assert.equal(m.state.awaiting, 'letter');
+  // Next press should accept ل.
+  assert.equal(m.tryLetter('ل').accepted, true);
+});
+
+test('matcher: optionalLetters does not affect non-optional letters', () => {
+  const m = new LiveMatcher(buildSkeleton('قُلْ'), { optionalLetters: ['س'] });
+  assert.equal(m.state.typed.length, 0);
+  assert.equal(m.tryLetter('ق').accepted, true);
+});

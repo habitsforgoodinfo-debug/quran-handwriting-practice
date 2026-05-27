@@ -1,5 +1,16 @@
 import { RECITERS } from '../audio/player.js';
 
+// Letters offered as toggleable "required" chips in the settings modal.
+// Order roughly matches the Arabic alphabet so it reads naturally.
+const TOGGLEABLE_LETTERS = [
+  ['ا','alif'], ['ب','ba'], ['ت','ta'], ['ث','tha'], ['ج','jeem'],
+  ['ح','haa'], ['خ','kha'], ['د','dal'], ['ذ','zal'], ['ر','ra'],
+  ['ز','za'], ['س','seen'], ['ش','sheen'], ['ص','suad'], ['ض','duad'],
+  ['ط','tua'], ['ظ','zua'], ['ع','ain'], ['غ','ghain'], ['ف','fa'],
+  ['ق','qaf'], ['ك','kaf'], ['ل','lam'], ['م','meem'], ['ن','noon'],
+  ['ه','ha'], ['و','waw'], ['ي','ya'], ['ء','hamza'], ['ة','ta-marbuta']
+];
+
 export function mountSettingsModal(root, { settings, onChange, onResetStats, onClose }) {
   const modal = document.createElement('div');
   modal.className = 'modal';
@@ -66,6 +77,38 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   sw.value = String(settings.strokeWidth);
   labWidth.appendChild(sw);
 
+  const lettersBlock = document.createElement('div');
+  lettersBlock.className = 'required-letters';
+  const lettersTitle = document.createElement('div');
+  lettersTitle.className = 'required-letters__title';
+  lettersTitle.textContent = 'Required letters (unticked letters are auto-filled)';
+  const lettersGrid = document.createElement('div');
+  lettersGrid.className = 'required-letters__grid';
+
+  const optionalSet = new Set(settings.optionalLetters || []);
+
+  function emitOptional() {
+    onChange({ optionalLetters: [...optionalSet] });
+  }
+
+  for (const [ch, name] of TOGGLEABLE_LETTERS) {
+    const chip = document.createElement('button');
+    chip.type = 'button';
+    chip.className = 'letter-chip' + (optionalSet.has(ch) ? '' : ' letter-chip--required');
+    chip.dataset.letter = ch;
+    chip.setAttribute('title', name);
+    const g = document.createElement('span'); g.className = 'letter-chip__glyph'; g.textContent = ch;
+    const n = document.createElement('span'); n.className = 'letter-chip__name';  n.textContent = name;
+    chip.append(g, n);
+    chip.addEventListener('click', () => {
+      if (optionalSet.has(ch)) { optionalSet.delete(ch); chip.classList.add('letter-chip--required'); }
+      else                     { optionalSet.add(ch);    chip.classList.remove('letter-chip--required'); }
+      emitOptional();
+    });
+    lettersGrid.appendChild(chip);
+  }
+  lettersBlock.append(lettersTitle, lettersGrid);
+
   const resetBtn = document.createElement('button');
   resetBtn.className = 'reset-stats';
   resetBtn.textContent = 'Reset stats';
@@ -74,7 +117,7 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   closeBtn.className = 'close';
   closeBtn.textContent = 'Close';
 
-  panel.append(h, labReciter, labHint, labAutoPlay, labSilent, labWidth, resetBtn, closeBtn);
+  panel.append(h, labReciter, labHint, labAutoPlay, labSilent, labWidth, lettersBlock, resetBtn, closeBtn);
   modal.appendChild(panel);
   root.appendChild(modal);
 

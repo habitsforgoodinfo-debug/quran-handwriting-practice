@@ -35,20 +35,22 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
   let matcher = null;
   let versePerfect = true;
   let reviewMode = false;
+  let optionalLetters = [];
 
   function loadCurrentVerse() {
     words = parseVerse(rawText);
     translits = words.map(transliterateWord);
     skeleton = buildSkeleton(rawText, { isVerseStart: true });
-    matcher = new LiveMatcher(skeleton);
+    matcher = new LiveMatcher(skeleton, { optionalLetters });
     versePerfect = true;
     reviewMode = false;
     render();
     updateProgress();
   }
 
-  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt, slide = false }) {
+  function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt, slide = false, optionalLetters: opt }) {
     surah = s; surahName = sn; ayah = a; rawText = rt;
+    if (opt) optionalLetters = opt;
     banner.style.display = 'none';
     banner.innerHTML = '';
     if (!rawText) {
@@ -132,7 +134,10 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
       if (t.kind === 'wordEnd') { userPane.appendChild(document.createTextNode(' ')); continue; }
       const s = document.createElement('span');
       s.textContent = (t.letter || '') + (t.harakat || '');
-      s.className = t.kind === 'silent' ? 'user-glyph silent' : 'user-glyph';
+      let cls = 'user-glyph';
+      if (t.kind === 'silent') cls += ' silent';
+      if (t.auto) cls += ' auto';
+      s.className = cls;
       userPane.appendChild(s);
     }
   }

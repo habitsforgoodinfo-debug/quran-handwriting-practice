@@ -20,9 +20,10 @@ const HINT_ORDER = ['shadda','fatha','kasra','damma','sukun',
   'maddah_above','high_madda'];
 
 export class LiveMatcher {
-  constructor(skeleton, { strict = false } = {}) {
+  constructor(skeleton, { strict = false, optionalLetters = [] } = {}) {
     this.skeleton = skeleton;
     this.strict = strict;
+    this.optionalLetters = new Set(optionalLetters);
     this.state = {
       slotIdx: 0,
       awaiting: 'letter',
@@ -36,6 +37,8 @@ export class LiveMatcher {
   _isAutoConsumed(slot) {
     if (slot.kind === 'wordEnd') return true;
     if (slot.kind === 'silent' && AUTO_CONSUME_SILENT.has(slot.letter)) return true;
+    if ((slot.kind === 'sound' || slot.kind === 'silent') &&
+        this.optionalLetters.has(slot.letter)) return true;
     return false;
   }
 
@@ -44,7 +47,14 @@ export class LiveMatcher {
       const s = this.skeleton[this.state.slotIdx];
       if (this._isAutoConsumed(s)) {
         inserted.push(s);
-        this.state.typed.push({ kind: s.kind, letter: s.letter, slotIdx: this.state.slotIdx });
+        const entry = { kind: s.kind, letter: s.letter, slotIdx: this.state.slotIdx };
+        if ((s.kind === 'sound' || s.kind === 'silent') && this.optionalLetters.has(s.letter)) {
+          const required = s.expectedHarakat?.required || [];
+          const harakatStr = required.map(n => HARAKAT_CHAR[n] || '').join('');
+          if (harakatStr) entry.harakat = harakatStr;
+          entry.auto = true;
+        }
+        this.state.typed.push(entry);
         this.state.slotIdx++;
         continue;
       }

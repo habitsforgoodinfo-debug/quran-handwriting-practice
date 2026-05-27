@@ -72,6 +72,24 @@ html, body {
 }
 .user-pane.user-pane--sliding { transform: translateX(-30px); opacity: 0; }
 .user-glyph.silent { color: #9aa0a6; opacity: 0.7; }
+.user-glyph.auto { color: #2c8a02; opacity: 0.55; }
+
+.required-letters { display: flex; flex-direction: column; gap: 6px; }
+.required-letters__title { font-size: 13px; color: #4a4a4a; }
+.required-letters__grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(64px, 1fr));
+  gap: 6px;
+}
+.letter-chip {
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 6px 4px; gap: 2px;
+  background: #f6f6f6; color: #888; border: 1px solid #e2e2e2; border-radius: 8px;
+  cursor: pointer; font-family: inherit;
+}
+.letter-chip__glyph { font-size: 20px; line-height: 1; }
+.letter-chip__name  { font-size: 10px; line-height: 1; }
+.letter-chip--required { background: #eef7e4; color: #2c8a02; border-color: #b8e08a; }
+.letter-chip--required .letter-chip__name { color: #2c8a02; }
 
 .range-complete-banner {
   color: #1c1c1c; padding: 16px 8px; text-align: center;
