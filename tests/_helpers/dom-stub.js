@@ -7,7 +7,13 @@ class StubClassList {
   add(...names) { for (const n of names) this._set.add(n); this._sync(); }
   remove(...names) { for (const n of names) this._set.delete(n); this._sync(); }
   contains(name) { return this._set.has(name); }
-  toggle(name) { if (this._set.has(name)) this._set.delete(name); else this._set.add(name); this._sync(); }
+  toggle(name, force) {
+    if (force === true) this._set.add(name);
+    else if (force === false) this._set.delete(name);
+    else if (this._set.has(name)) this._set.delete(name);
+    else this._set.add(name);
+    this._sync();
+  }
   _sync() { this.el._className = [...this._set].join(' '); }
 }
 
@@ -69,7 +75,14 @@ class StubNode {
     if (i >= 0) arr.splice(i, 1);
   }
   dispatch(name, event = {}) {
+    if (!event.stopPropagation) event.stopPropagation = () => {};
     for (const fn of this._listeners[name] || []) fn(event);
+  }
+  contains(node) {
+    for (const c of this.children) {
+      if (c === node || c.contains(node)) return true;
+    }
+    return false;
   }
   setAttribute(k, v) { this._attrs[k] = String(v); }
   getAttribute(k) { return this._attrs[k]; }

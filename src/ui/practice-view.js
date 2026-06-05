@@ -4,11 +4,12 @@ import { mountHeatmapStrip } from './heatmap-strip.js';
 import { _diacriticCharByName as CHAR_BY_NAME, parseVerse } from '../verse/parser.js';
 import { transliterateWord } from '../verse/transliterate.js';
 
-export function mountPracticeView(root, { onVerseComplete } = {}) {
+export function mountPracticeView(root, { onVerseComplete, showTranslit = true } = {}) {
   root.innerHTML = '';
   root.className = (root.className || '') + ' practice-view';
 
-  // Upper section: transliteration of every word in the verse.
+  // Upper section: transliteration of every word in the verse. Omitted
+  // entirely in the hifz modes (showTranslit:false) where the canvas is bare.
   const translitPane = document.createElement('div');
   translitPane.className = 'translit-pane';
 
@@ -21,9 +22,20 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
   const banner       = document.createElement('div'); banner.className = 'range-complete-banner';
   banner.style.display = 'none';
 
-  root.append(translitPane, userPane, progressRoot, banner);
+  if (showTranslit) root.append(translitPane, userPane, progressRoot, banner);
+  else              root.append(userPane, progressRoot, banner);
 
   const progressStrip = mountHeatmapStrip(progressRoot);
+
+  // Replay button - appended after strip inside progressRoot, hidden by default.
+  // Shown only in dictation mode via setReplay().
+  const replayBtn = document.createElement('button');
+  replayBtn.className = 'replay-btn';
+  replayBtn.textContent = '↺';
+  replayBtn.title = 'Replay ayah';
+  replayBtn.setAttribute('aria-label', 'Replay ayah audio');
+  replayBtn.style.display = 'none';
+  progressRoot.appendChild(replayBtn);
 
   let surah = 0;
   let surahName = '';
@@ -112,6 +124,12 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
 
   function updateProgress() {
     if (!surahName) { progressStrip.update(null); return; }
+    // Bare canvas (showTranslit:false) repurposes the strip as a plain
+    // position indicator — "<SurahName> · <ayah>" with no word counter.
+    if (!showTranslit) {
+      progressStrip.update({ surahName, ayah, wordIdx: null, totalWords: null, meaning: null });
+      return;
+    }
     progressStrip.update({
       surahName, ayah,
       wordIdx: getCurrentWordIdx(),
@@ -125,17 +143,19 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
     const currentWord = getCurrentWordIdx();
 
     // Transliteration pane: one chip per word, current word highlighted,
-    // sealed words greened, future words muted.
-    translitPane.innerHTML = '';
+    // sealed words greened, future words muted. Skipped on the bare canvas.
     let currentTranslitEl = null;
-    for (let wi = 0; wi < translits.length; wi++) {
-      const span = document.createElement('span');
-      span.className = 'translit-word';
-      if (wi < currentWord)      span.classList.add('translit-word--sealed');
-      else if (wi === currentWord) { span.classList.add('translit-word--current'); currentTranslitEl = span; }
-      else                         span.classList.add('translit-word--future');
-      span.textContent = translits[wi];
-      translitPane.appendChild(span);
+    if (showTranslit) {
+      translitPane.innerHTML = '';
+      for (let wi = 0; wi < translits.length; wi++) {
+        const span = document.createElement('span');
+        span.className = 'translit-word';
+        if (wi < currentWord)      span.classList.add('translit-word--sealed');
+        else if (wi === currentWord) { span.classList.add('translit-word--current'); currentTranslitEl = span; }
+        else                         span.classList.add('translit-word--future');
+        span.textContent = translits[wi];
+        translitPane.appendChild(span);
+      }
     }
 
     // User pane: Arabic letters as the user has typed.
@@ -238,6 +258,16 @@ export function mountPracticeView(root, { onVerseComplete } = {}) {
     getCurrentAyah: () => ayah,
     getCurrentSurah: () => surah,
     setMeaningLookup: () => {}, // no-op now; transliteration covers it
+    // Show/hide the dictation replay button. Pass a callback to show; null hides.
+    setReplay(fn) {
+      if (fn) {
+        replayBtn.style.display = '';
+        replayBtn.onclick = fn;
+      } else {
+        replayBtn.style.display = 'none';
+        replayBtn.onclick = null;
+      }
+    },
     // legacy aliases
     setVerses: (verses) => {
       if (!verses || verses.length === 0) {

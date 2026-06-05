@@ -9,6 +9,7 @@ export function mountHeatmapStrip(root) {
   posEl.className = 'progress-pos';
   const meaningEl = document.createElement('span');
   meaningEl.className = 'progress-meaning';
+
   root.append(posEl, meaningEl);
 
   function update(payload) {
@@ -23,9 +24,15 @@ export function mountHeatmapStrip(root) {
       meaningEl.innerHTML = '';
       return;
     }
-    posEl.textContent = `${surahName} · ${ayah} · word ${
-      Math.min(wordIdx + 1, totalWords)
-    } of ${totalWords}`;
+    // When word counters are omitted (canvas position-indicator mode) show
+    // just "<SurahName> · <ayah>".
+    if (wordIdx == null || totalWords == null) {
+      posEl.textContent = `${surahName} · ${ayah}`;
+    } else {
+      posEl.textContent = `${surahName} · ${ayah} · word ${
+        Math.min(wordIdx + 1, totalWords)
+      } of ${totalWords}`;
+    }
     // Word-by-word meaning now renders interlinear under each canonical
     // word, so the strip only shows transliteration of the current word.
     meaningEl.innerHTML = '';

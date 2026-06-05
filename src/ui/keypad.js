@@ -35,7 +35,7 @@ const LAYOUT = [
 
 const LONG_PRESS_MS = 450;
 
-export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } = {}) {
+export function mountKeypad(root, initialHandlers = {}, { script = 'indopak', showAudio = true } = {}) {
   root.innerHTML = '';
 
   const handlers = { ...initialHandlers };
@@ -48,7 +48,7 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
   lettersWrap.className = 'keypad-letters';
 
   const actionRow = document.createElement('div');
-  actionRow.className = 'keypad-actions';
+  actionRow.className = 'keypad-actions' + (showAudio ? '' : ' keypad-actions--2');
 
   root.append(harakatRow, lettersWrap, actionRow);
 
@@ -149,9 +149,13 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak' } =
 
   actionRow.append(
     mkActionKey('⌫', 'key--action back', () => handlers.onBackspace && handlers.onBackspace()),
-    mkActionKey('→ next ayah', 'key--action next', () => handlers.onNextAyah && handlers.onNextAyah()),
-    mkActionKey('▶ audio', 'key--action audio', () => handlers.onPlayAudio && handlers.onPlayAudio())
+    mkActionKey('→ next ayah', 'key--action next', () => handlers.onNextAyah && handlers.onNextAyah())
   );
+  if (showAudio) {
+    actionRow.append(
+      mkActionKey('▶ audio', 'key--action audio', () => handlers.onPlayAudio && handlers.onPlayAudio())
+    );
+  }
 
   function setHint({ letter, harakat } = {}) {
     for (const el of byChar.values()) el.classList.remove('key--glow');

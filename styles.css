@@ -147,6 +147,21 @@ html, body {
 .progress-meaning__tl   { font-style: italic; color: #1c1c1c; }
 .progress-meaning__root { color: #8a6300; }
 
+/* Dictation replay button inside the progress-strip row */
+.replay-btn {
+  margin-left: 4px;
+  background: none;
+  border: 1px solid #d8cdb8;
+  border-radius: 6px;
+  color: #1cb0f6;
+  font-size: 14px;
+  line-height: 1;
+  padding: 1px 6px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.replay-btn:hover { background: #e8f6fe; border-color: #b9e3fb; }
+
 .keypad-harakat { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }
 .keypad-row     { display: grid; gap: 4px; }
@@ -201,111 +216,289 @@ html, body {
 .modal label  { display: flex; justify-content: space-between; gap: 12px; align-items: center; }
 .modal button { padding: 8px 12px; background: #f7efdc; color: #1c1c1c; border: 1px solid #d8cdb8; border-radius: 6px; cursor: pointer; }
 
-/* My book */
-.my-book__panel { width: 90vw; max-width: 720px; }
-.my-book__head { display: flex; justify-content: space-between; align-items: center; }
-.my-book__head h3 { margin: 0; font-size: 18px; }
-.my-book__body { display: flex; flex-direction: column; gap: 16px; }
-.my-book__surah { border-top: 1px solid #eee2cf; padding-top: 12px; }
-.my-book__surah-title { margin: 0 0 8px 0; font-size: 15px; color: #2c8a02; }
-.my-book__flow {
-  font-family: 'Amiri','NotoNaskhArabic',serif;
-  direction: rtl; text-align: justify; text-align-last: right;
-  text-justify: inter-word;
-  font-size: 24px; line-height: 2.4;
-  color: #1c1c1c;
-  background: #fffdf6; padding: 18px 20px;
-  border: 1px solid #d8cdb8; border-radius: 8px;
-  box-shadow: inset 0 0 0 4px #fffdf6, inset 0 0 0 5px #d8cdb8;
-}
-.my-book__text             { padding: 0 2px; }
-.my-book__text--perfect    { color: #2c8a02; }
-.my-book__marker {
-  color: #b8860b; font-size: 14px; font-family: 'Nunito',sans-serif;
-  margin: 0 4px;
-}
-.my-book__skip {
-  display: inline-block; padding: 0 4px; color: #b8b0a0;
-  background: #f7efdc; border-radius: 4px; font-family: 'Nunito',sans-serif;
-  font-size: 14px; vertical-align: middle;
-}
-.my-book__empty { color: #9aa0a6; font-style: italic; padding: 12px 0; }
-.my-book__note  { color: #5b5346; font-size: 12px; padding-top: 8px; border-top: 1px dashed #d8cdb8; }
-
-/* Intro / welcome modal */
-.intro-modal .intro__panel { width: 92vw; max-width: 720px; gap: 16px; }
-.intro__head { text-align: center; }
-.intro__bismillah {
-  font-family: 'Amiri','NotoNaskhArabic',serif; font-size: 36px; color: #2c8a02; line-height: 1;
-}
-.intro__title { margin: 8px 0 4px 0; font-size: 20px; color: #1c1c1c; }
-.intro__sub   { font-size: 13px; color: #5b5346; }
-.intro__section { border-top: 1px dashed #eee2cf; padding-top: 12px; }
-.intro__section p { margin: 4px 0 0 0; font-size: 14px; line-height: 1.55; color: #1c1c1c; }
-.intro__h { margin: 0; font-size: 14px; color: #2c8a02; text-transform: uppercase; letter-spacing: 0.5px; }
-.intro__hint { font-style: italic; color: #5b5346; font-size: 13px; }
-
-.intro__anchor { background: #fffaf2; padding: 12px; border-radius: 10px; border: 1px solid #eee2cf; text-align: center; }
-.intro__verse-ar {
-  font-family: 'Amiri','NotoNaskhArabic',serif; direction: rtl;
-  font-size: 24px; line-height: 1.8; color: #1c1c1c;
-}
-.intro__verse-en { font-style: italic; font-size: 14px; color: #1c1c1c; margin-top: 8px; }
-.intro__verse-ref { font-size: 12px; color: #8a6300; margin-top: 4px; }
-.intro__quote { font-size: 13px; color: #5b5346; margin-top: 12px; font-style: italic; }
-
-.intro__examples { display: flex; flex-direction: column; gap: 10px; margin-top: 8px; }
-.intro-example {
-  background: #fffdf6; border: 1px solid #eee2cf; border-radius: 8px; padding: 10px;
-}
-.intro-example__ar {
-  font-family: 'Amiri','NotoNaskhArabic',serif; direction: rtl; font-size: 32px; line-height: 1.4;
-  color: #1c1c1c; text-align: right;
-}
-.intro-example__meta { font-size: 13px; color: #5b5346; }
-.intro-example__tl   { font-style: italic; color: #1c1c1c; font-weight: 600; }
-.intro-example__where { color: #8a6300; }
-.intro-example__note { font-size: 13px; color: #1c1c1c; margin-top: 4px; line-height: 1.5; }
-
-.intro__steps { padding-left: 20px; margin: 4px 0 0 0; }
-.intro__steps li { font-size: 14px; margin-bottom: 4px; line-height: 1.5; }
-
-.intro__dua { background: #f1fbe6; border: 1px solid #b8e08a; border-radius: 10px; padding: 12px; }
-.intro__dua .intro__h { color: #2c8a02; }
-.intro__dua p { font-size: 14px; color: #1c1c1c; }
-
-.intro__foot { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 6px; flex-wrap: wrap; }
-.intro__check { display: flex; align-items: center; gap: 8px; font-size: 13px; color: #5b5346; }
-.intro__close {
-  background: #58cc02; color: white; border: 1px solid #4ab300;
-  border-radius: 8px; padding: 10px 18px; font-weight: 700; font-size: 14px;
-  cursor: pointer;
-}
-
-/* Step-by-step tutorial (replaces the old long welcome modal) */
-.intro__panel--tutorial { gap: 14px; max-width: 520px; }
-.intro__progress {
-  text-transform: uppercase; letter-spacing: 1px;
-  font-size: 11px; color: #8a6300; font-weight: 700;
-}
-.intro__step-title {
-  margin: 0; font-size: 22px; color: #1c1c1c; line-height: 1.25;
-}
-.intro__step-body {
-  font-size: 16px; line-height: 1.55; color: #1c1c1c;
-  white-space: pre-line;
-}
-.intro__check--final { padding-top: 4px; }
-.intro__nav { display: flex; gap: 8px; justify-content: flex-end; flex-wrap: wrap; }
-.intro__btn {
-  border-radius: 8px; padding: 10px 16px; font-weight: 700; font-size: 15px;
-  cursor: pointer; border: 1px solid transparent;
-}
-.intro__btn--back  { background: #f6f1e6; color: #5b5346; border-color: #ddd1b8; }
-.intro__btn--back:disabled { opacity: 0.4; cursor: default; }
-.intro__btn--next  { background: #58cc02; color: white; border-color: #4ab300; }
-.intro__btn--start { background: #58cc02; color: white; border-color: #4ab300; }
-
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff4b4b; color: white; padding: 10px 16px; border-radius: 8px; z-index: 200; display: flex; align-items: center; gap: 8px; }
 .toast button.toast-retry   { background: white; color: #ff4b4b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 .toast button.toast-dismiss { background: transparent; color: white; border: none; font-size: 18px; cursor: pointer; padding: 0 4px; }
+
+/* ============================================================
+   Phase B: card stack + welcome + surah grid + drawer
+   ============================================================ */
+
+/* --- Card stack (navigator.js class contract) --- */
+#cards { position: relative; height: 100dvh; overflow: hidden; }
+.card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 260ms ease;
+  will-change: transform;
+  background: #fffaf2;
+  overflow-y: auto;
+}
+.card--active { transform: translateX(0); }
+.card--left   { transform: translateX(-100%); }
+
+/* --- Canvas card layout (replaces old #verse-display / #keypad-view) --- */
+.canvas { overflow: hidden; }
+.canvas .practice-view { flex: 1 1 auto; padding: 12px; padding-top: 44px; overflow-y: auto; min-height: 0; }
+.canvas .rolling-strip { flex: 0 0 auto; }
+.keypad-view {
+  flex: 0 0 auto;
+  border-top: 1px solid #eee2cf;
+  padding: 8px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* --- Welcome screen --- */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex: 1;
+  padding: 24px 16px 32px;
+  min-height: 100%;
+}
+
+.welcome__heading {
+  font-size: 18px;
+  color: #5b5346;
+  text-align: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.welcome__tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.welcome__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 20px 22px;
+  background: #fffaf2;
+  border: 1.5px solid #d8cdb8;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease, border-color 120ms ease;
+  width: 100%;
+}
+.welcome__tile:hover  { background: #f6f1e6; border-color: #bfb49e; }
+.welcome__tile:active { background: #ede6d6; }
+
+.welcome__tile-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c1c1c;
+}
+.welcome__tile-sub {
+  font-size: 13px;
+  color: #5b5346;
+}
+
+.welcome__resume {
+  background: none;
+  border: none;
+  color: #58cc02;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.welcome__resume:hover { color: #4ab300; }
+
+/* --- Surah grid screen --- */
+.surah-grid__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #d8cdb8;
+  flex-shrink: 0;
+}
+
+.surah-grid__back {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #5b5346;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.surah-grid__back:hover { background: #f0e8d8; }
+
+.surah-grid__heading {
+  font-size: 17px;
+  color: #1c1c1c;
+  margin: 0;
+  font-weight: 700;
+}
+
+.surah-grid__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.surah-tile {
+  appearance: none;
+  font: inherit;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  background: #fffaf2;
+  border: 1px solid #d8cdb8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  position: relative;
+  width: 100%;
+}
+.surah-tile:hover  { background: #f6f1e6; border-color: #bfb49e; }
+.surah-tile:active { background: #ede6d6; }
+
+.surah-tile--low {
+  border-color: #c41a1a;
+  background: #fff5f5;
+}
+.surah-tile--low:hover { background: #ffe8e8; }
+
+.surah-tile--open { border-color: #58cc02; }
+
+.surah-tile__num {
+  font-size: 10px;
+  color: #8a6300;
+  font-weight: 600;
+}
+.surah-tile__ar {
+  font-family: 'Amiri', 'NotoNaskhArabic', serif;
+  font-size: 15px;
+  color: #1c1c1c;
+  direction: rtl;
+  line-height: 1.4;
+}
+.surah-tile__en {
+  font-size: 11px;
+  color: #5b5346;
+  line-height: 1.3;
+}
+.surah-tile__stats {
+  font-size: 10px;
+  color: #8a6300;
+  margin-top: 2px;
+}
+.surah-tile--low .surah-tile__stats { color: #c41a1a; }
+
+/* Inline start-over / continue choice */
+.surah-tile__choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #d8cdb8;
+}
+.surah-tile__choice-btn {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.surah-tile__choice-btn--start {
+  background: #f6f1e6;
+  color: #5b5346;
+  border-color: #d8cdb8;
+}
+.surah-tile__choice-btn--start:hover { background: #ede6d6; }
+.surah-tile__choice-btn--continue {
+  background: #58cc02;
+  color: white;
+  border-color: #4ab300;
+}
+.surah-tile__choice-btn--continue:hover { background: #4ab300; }
+
+/* --- Drawer --- */
+.drawer__hamburger {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 50;
+  background: #fffaf2;
+  border: 1px solid #d8cdb8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #5b5346;
+}
+.drawer__hamburger:hover { background: #f0e8d8; }
+
+.drawer__scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 60;
+}
+.drawer__scrim--open { display: block; }
+
+.drawer__panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(280px, 80vw);
+  background: #fffaf2;
+  border-left: 1px solid #d8cdb8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 16px;
+  z-index: 70;
+  transform: translateX(100%);
+  transition: transform 240ms ease;
+}
+.drawer__panel--open { transform: translateX(0); }
+
+.drawer__item {
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1c1c1c;
+  padding: 14px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+.drawer__item:hover { background: #f0e8d8; }
+
+/* Keypad actions 2-column layout (used in Phase C when audio key hidden) */
+.keypad-actions--2 { grid-template-columns: 1fr 1fr; }
