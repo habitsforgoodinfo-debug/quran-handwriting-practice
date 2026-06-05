@@ -1,7 +1,7 @@
 import { vibrateTap, vibrateWrong } from './feedback.js';
 
 // Each harakat key: short tap fires `char`; long-press (where defined)
-// fires `longChar` — the elongated form (Indo-Pak long-vowel marks).
+// fires `longChar` - the elongated form (Indo-Pak long-vowel marks).
 const HARAKAT_BASE = [
   { name: 'fatha',          char: 'َ'  },                  // single-tap only
   { name: 'damma',          char: 'ُ'  },                  // single-tap only
@@ -93,7 +93,7 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak', sh
       alt.className = 'k-alt';
       alt.textContent = spec.longChar;
       b.appendChild(alt);
-      b.setAttribute('title', `Tap for ${spec.char} — long-press for ${spec.longChar}`);
+      b.setAttribute('title', `Tap for ${spec.char} - long-press for ${spec.longChar}`);
     }
 
     byChar.set(spec.char, b);
@@ -173,7 +173,7 @@ export function mountKeypad(root, initialHandlers = {}, { script = 'indopak', sh
 
   function setHandlers(next) { Object.assign(handlers, next); }
   function setScript(_s) {
-    // Kept for API compatibility — the keypad no longer swaps glyphs by
+    // Kept for API compatibility - the keypad no longer swaps glyphs by
     // script. Both Uthmani and Indo-Pak codepoints are aliased to the
     // same key, so the same physical button works for both scripts.
   }

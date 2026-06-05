@@ -12,9 +12,9 @@ const GATED_DIACRITICS = new Set([
   'high_madda'
 ]);
 
-// Indo-Pak script substitutes — they mean the same sound as their canonical
+// Indo-Pak script substitutes - they mean the same sound as their canonical
 // counterpart, so the matcher should require the canonical name (and accept
-// either codepoint as input — handled in live-matcher.js).
+// either codepoint as input - handled in live-matcher.js).
 const DIACRITIC_ALIASES = {
   high_dotless_head_of_khah: 'sukun',       // U+06E1 (Indo-Pak alt sukun)
   high_madda:                'maddah_above',// U+06E4 (Indo-Pak madda)
@@ -97,7 +97,7 @@ export function buildSkeleton(rawVerse, { isVerseStart = false } = {}) {
   }
 
   // If the very first sound slot of the verse carries a shadda, drop it
-  // from the required marks — at the start of an utterance you can't
+  // from the required marks - at the start of an utterance you can't
   // pronounce a doubled consonant from silence, so the shadda is
   // effectively ignored in recitation.
   if (isVerseStart) {

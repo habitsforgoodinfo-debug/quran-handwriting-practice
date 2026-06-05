@@ -11,7 +11,7 @@ export function isSilentInWord(glyphs, index) {
   if (!g) return false;
   // Indo-Pak silent-letter marker (U+06DF ۟ / U+06E0 ۠). When the
   // canonical text places this small high zero above a letter, the
-  // letter is silent in recitation — auto-consume it.
+  // letter is silent in recitation - auto-consume it.
   if (g.diacritics.includes('small_high_rounded_zero')
       || g.diacritics.includes('high_upright_rectangular_zero')) {
     return true;

@@ -5,7 +5,7 @@ import { buildSkeleton } from '../../src/verse/skeleton.js';
 function kinds(slots) { return slots.map(s => s.kind); }
 function reqSet(slot) { return new Set(slot.expectedHarakat.required || []); }
 
-test('skeleton: simple verse — sound + wordEnd per word', () => {
+test('skeleton: simple verse - sound + wordEnd per word', () => {
   const slots = buildSkeleton('قُلْ هُوَ');
   assert.deepEqual(kinds(slots), ['sound','sound','wordEnd','sound','sound','wordEnd']);
   assert.deepEqual(reqSet(slots[0]), new Set(['damma']));
@@ -35,7 +35,7 @@ test('skeleton: shadda + dagger_alif (لَّٰ) → required contains both', () 
   assert.ok(req.includes('dagger_alif'), 'should include dagger_alif');
 });
 
-test('skeleton: sun-letter article — alif and lam both silent', () => {
+test('skeleton: sun-letter article - alif and lam both silent', () => {
   const slots = buildSkeleton('الشَّمْسِ');
   assert.deepEqual(kinds(slots).slice(0, 5), ['silent','silent','sound','sound','sound']);
 });
@@ -84,7 +84,7 @@ test('skeleton: last sound slot of verse carries acceptWaqf=true', () => {
 });
 
 test('skeleton: Indo-Pak sukun glyph (ۡ) normalized to required=[sukun]', () => {
-  // بِسۡمِ — س has ۡ (high_dotless_head_of_khah → sukun)
+  // بِسۡمِ - س has ۡ (high_dotless_head_of_khah → sukun)
   const slots = buildSkeleton('بِسۡمِ');
   const seen = slots.find(s => s.letter === 'س');
   assert.ok(seen);
@@ -101,7 +101,7 @@ test('skeleton: pause marks (e.g. ۙ) go into ornaments not required', () => {
   assert.ok((lam.expectedHarakat.ornaments || []).includes('high_lam'));
 });
 
-test('skeleton: verse-start letter with shadda — shadda dropped from required', () => {
+test('skeleton: verse-start letter with shadda - shadda dropped from required', () => {
   // إِنَّا at verse start. The first sound is the alif-with-kasra (no
   // shadda). To exercise the rule, use a verse that genuinely begins with
   // a shadda'd letter: يَّ as a contrived first word.
@@ -112,7 +112,7 @@ test('skeleton: verse-start letter with shadda — shadda dropped from required'
 });
 
 test('skeleton: long-kasra (ٖ) is a required diacritic', () => {
-  // Quraysh 106:2 first word اٖلٰفِهِمۡ — ا has ٖ
+  // Quraysh 106:2 first word اٖلٰفِهِمۡ - ا has ٖ
   const slots = buildSkeleton('اٖلٰفِهِمۡ', { isVerseStart: true });
   const alif = slots.find(s => s.letter === 'ا');
   assert.ok(alif);

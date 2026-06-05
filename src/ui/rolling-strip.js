@@ -28,7 +28,7 @@ export function mountRollingStrip(root) {
       marker.textContent = ' ۝ ';
       wrap.append(text, marker);
     });
-    // Newest text sits at the end of the running paragraph — scroll so
+    // Newest text sits at the end of the running paragraph - scroll so
     // the bottom of the strip stays in view.
     wrap.scrollTop = wrap.scrollHeight;
   }

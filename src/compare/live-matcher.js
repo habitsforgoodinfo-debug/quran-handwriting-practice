@@ -10,7 +10,7 @@ const HARAKAT_NAME = Object.fromEntries(
   Object.entries(HARAKAT_CHAR).map(([n, c]) => [c, n])
 );
 HARAKAT_NAME['ۤ'] = 'maddah_above';     // Indo-Pak high madda
-HARAKAT_NAME['ْ'] = 'sukun';            // Uthmani sukun (circle) — accepted as input
+HARAKAT_NAME['ْ'] = 'sukun';            // Uthmani sukun (circle) - accepted as input
 
 const AUTO_CONSUME_SILENT = new Set(['ا', 'و', 'ي', 'ى', 'ل', 'ٱ']);
 

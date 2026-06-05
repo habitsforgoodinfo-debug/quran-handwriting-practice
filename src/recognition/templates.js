@@ -1,5 +1,5 @@
 // DOM-dependent module: uses document.createElement('canvas') and canvas font rendering.
-// No Node unit tests — Node has no document and no canvas font rendering.
+// No Node unit tests - Node has no document and no canvas font rendering.
 // Tests inject mock templates directly into the classifier instead.
 
 import { resample, normalize } from './dtw.js';

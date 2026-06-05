@@ -42,7 +42,7 @@ export function mountHeatmapStrip(root) {
       t.className = 'progress-meaning__tl';
       t.textContent = meaning.tl;
       meaningEl.append(sep, t);
-      if (meaning.root && meaning.root !== '—') {
+      if (meaning.root && meaning.root !== '-') {
         const r = document.createElement('span');
         r.className = 'progress-meaning__root';
         r.textContent = ' · root ' + meaning.root;

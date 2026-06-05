@@ -133,7 +133,7 @@ test('keypad: sukun key fires ۡ (jazm) in both scripts', () => {
   assert.deepEqual(calls.harakat, ['ۡ']);
 });
 
-test('keypad: hint glow — setHint({harakat: ٰ}) glows the dagger-alif key (the dedicated key wins over fatha-long-press)', () => {
+test('keypad: hint glow - setHint({harakat: ٰ}) glows the dagger-alif key (the dedicated key wins over fatha-long-press)', () => {
   const { root, api } = setup();
   api.setHint({ harakat: 'ٰ' });
   const glowing = root.querySelectorAll('.key--glow');
@@ -142,7 +142,7 @@ test('keypad: hint glow — setHint({harakat: ٰ}) glows the dagger-alif key (th
   assert.ok(main && main.textContent.includes('ٰ'));
 });
 
-test('keypad: hint glow — setHint({harakat: ٖ}) glows the dedicated subscript-alef key', () => {
+test('keypad: hint glow - setHint({harakat: ٖ}) glows the dedicated subscript-alef key', () => {
   const { root, api } = setup();
   api.setHint({ harakat: 'ٖ' });
   const glowing = root.querySelectorAll('.key--glow');
@@ -151,7 +151,7 @@ test('keypad: hint glow — setHint({harakat: ٖ}) glows the dedicated subscript
   assert.ok(main && main.textContent.includes('ٖ'));
 });
 
-test('keypad: hint glow — setHint({harakat: ٗ}) glows the dedicated inverted-damma key', () => {
+test('keypad: hint glow - setHint({harakat: ٗ}) glows the dedicated inverted-damma key', () => {
   const { root, api } = setup();
   api.setHint({ harakat: 'ٗ' });
   const glowing = root.querySelectorAll('.key--glow');

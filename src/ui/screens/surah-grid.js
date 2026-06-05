@@ -2,6 +2,7 @@
 // mountSurahGrid(rootEl, { onPick, onBack }) -> { refreshStats({ accMap, progressBySurah }) }
 
 import { SURAHS } from '../../data/surah-metadata.js';
+import { starsFor } from '../../stats/stars.js';
 
 // Mirrors header.js threshold: low accuracy below 50%.
 const LOW_ACC_THRESHOLD = 50;
@@ -140,16 +141,33 @@ export function mountSurahGrid(rootEl, { onPick, onBack }) {
       // Store for click handler.
       tileEl._lastAyah = lastAyah;
 
-      if (acc && acc.attempts > 0) {
-        const pct = Math.round((acc.hits / acc.attempts) * 100);
-        const isLow = pct < LOW_ACC_THRESHOLD;
-        if (isLow) { tileEl.classList.add('surah-tile--low'); }
-        else       { tileEl.classList.remove('surah-tile--low'); }
-        statsEl.textContent = `${pct}% acc · ${written}/${s.verses} ayahs`;
-      } else {
-        tileEl.classList.remove('surah-tile--low');
-        statsEl.textContent = written > 0 ? `${written}/${s.verses} ayahs` : '';
+      const pct = (acc && acc.attempts > 0)
+        ? Math.round((acc.hits / acc.attempts) * 100)
+        : null;
+      const stars = starsFor({ written, total: s.verses, accuracyPct: pct ?? 0 });
+
+      // Accuracy color tier: green great / amber mid / coral low.
+      tileEl.classList.remove('surah-tile--low', 'surah-tile--acc-good', 'surah-tile--acc-mid', 'surah-tile--complete');
+      if (pct != null) {
+        if (pct >= 85)      tileEl.classList.add('surah-tile--acc-good');
+        else if (pct >= 50) tileEl.classList.add('surah-tile--acc-mid');
+        else                tileEl.classList.add('surah-tile--low');
       }
+      if (stars > 0) tileEl.classList.add('surah-tile--complete');
+
+      statsEl.innerHTML = '';
+      if (stars > 0) {
+        const starsEl = document.createElement('span');
+        starsEl.className = 'surah-tile__stars';
+        starsEl.textContent = '★'.repeat(stars);
+        starsEl.setAttribute('aria-label', `${stars} star${stars > 1 ? 's' : ''}`);
+        statsEl.appendChild(starsEl);
+      }
+      const textEl = document.createElement('span');
+      textEl.className = 'surah-tile__stats-text';
+      if (pct != null) textEl.textContent = `${pct}% · ${written}/${s.verses}`;
+      else             textEl.textContent = written > 0 ? `${written}/${s.verses}` : '';
+      statsEl.appendChild(textEl);
     }
   }
 

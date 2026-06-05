@@ -55,7 +55,7 @@ test('matcher: madd alif in قَالَ is typed (not auto-consumed)', () => {
   assert.equal(m.state.awaiting, 'done');
 });
 
-test('matcher: shadda+vowel accepted in either order — إِنَّا includes terminal madd alif', () => {
+test('matcher: shadda+vowel accepted in either order - إِنَّا includes terminal madd alif', () => {
   const m1 = new LiveMatcher(buildSkeleton('إِنَّا'));
   m1.tryLetter('ا'); m1.tryHarakat(HARAKAT.kasra);
   m1.tryLetter('ن'); m1.tryHarakat(HARAKAT.shadda); m1.tryHarakat(HARAKAT.fatha);
@@ -80,6 +80,37 @@ test('matcher: strict mode disables tolerance', () => {
   assert.equal(m.tryLetter('ت').accepted, false);
 });
 
+// Hamza family tolerance: keypad only offers ء; ئ and ؤ are positional carriers
+test('matcher: tolerance accepts ء for expected ئ', () => {
+  const m = new LiveMatcher(buildSkeleton('ئ'), { strict: false });
+  assert.equal(m.tryLetter('ء').accepted, true);
+});
+
+test('matcher: tolerance accepts ء for expected ؤ', () => {
+  const m = new LiveMatcher(buildSkeleton('ؤ'), { strict: false });
+  assert.equal(m.tryLetter('ء').accepted, true);
+});
+
+test('matcher: tolerance accepts ئ for expected ء (symmetric)', () => {
+  const m = new LiveMatcher(buildSkeleton('ء'), { strict: false });
+  assert.equal(m.tryLetter('ئ').accepted, true);
+});
+
+test('matcher: tolerance accepts ؤ for expected ء (symmetric)', () => {
+  const m = new LiveMatcher(buildSkeleton('ء'), { strict: false });
+  assert.equal(m.tryLetter('ؤ').accepted, true);
+});
+
+test('matcher: strict mode rejects ء for expected ئ', () => {
+  const m = new LiveMatcher(buildSkeleton('ئ'), { strict: true });
+  assert.equal(m.tryLetter('ء').accepted, false);
+});
+
+test('matcher: hamza class does not match unrelated letter', () => {
+  const m = new LiveMatcher(buildSkeleton('ئ'), { strict: false });
+  assert.equal(m.tryLetter('ق').accepted, false);
+});
+
 test('matcher: backspace returns to letter-awaiting state', () => {
   const m = new LiveMatcher(buildSkeleton('قُلْ'));
   m.tryLetter('ق'); m.tryHarakat(HARAKAT.damma);
@@ -95,7 +126,7 @@ test('matcher: nextHint reflects awaiting state', () => {
   assert.equal(m.nextHint().harakat, HARAKAT.damma);
 });
 
-test('matcher: shadda + dagger_alif required, any order seals — reverse order', () => {
+test('matcher: shadda + dagger_alif required, any order seals - reverse order', () => {
   // Minimal fake skeleton: one sound slot with two required marks.
   const fake = [
     { kind: 'sound', letter: 'ل', expectedHarakat: { required: ['shadda', 'dagger_alif'] }, wordIdx: 0, canonicalIdx: 0 },
@@ -176,7 +207,7 @@ test('matcher: waqf-eligible tanween_fath slot accepts bare fatha', () => {
 test('matcher: wrong-mode keystroke also increments rejectCount (letter when awaiting harakat)', () => {
   const m = new LiveMatcher(buildSkeleton('قُلْ'));
   assert.equal(m.tryLetter('ق').accepted, true);
-  // awaiting harakat now — press a letter key
+  // awaiting harakat now - press a letter key
   const r = m.tryLetter('ل');
   assert.equal(r.accepted, false);
   assert.equal(m.state.rejectCount, 1);
@@ -184,7 +215,7 @@ test('matcher: wrong-mode keystroke also increments rejectCount (letter when awa
 
 test('matcher: wrong-mode keystroke also increments rejectCount (harakat when awaiting letter)', () => {
   const m = new LiveMatcher(buildSkeleton('قُلْ'));
-  // awaiting letter — press a harakat
+  // awaiting letter - press a harakat
   const r = m.tryHarakat('َ');
   assert.equal(r.accepted, false);
   assert.equal(m.state.rejectCount, 1);
@@ -224,7 +255,7 @@ test('matcher: long-damma ٗ accepted as inverted_damma', () => {
 });
 
 test('matcher: requiredLetters auto-fills non-required letters with their harakat', () => {
-  // قُلْ — if ق is NOT in requiredLetters, the matcher should auto-consume
+  // قُلْ - if ق is NOT in requiredLetters, the matcher should auto-consume
   // it (with damma) and start awaiting the next slot (ل).
   const m = new LiveMatcher(buildSkeleton('قُلْ'), { requiredLetters: ['ل'] });
   const qaf = m.state.typed[0];

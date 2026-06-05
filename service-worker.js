@@ -1,5 +1,5 @@
-const CACHE = 'qhp-v27';
-// Big, rarely-changing static assets — safe to cache-first.
+const CACHE = 'qhp-v28';
+// Big, rarely-changing static assets - safe to cache-first.
 const STATIC_ASSETS = [
   './assets/quran/quran-indopak.json',
   './assets/quran/quran-uthmani.json',
@@ -46,7 +46,7 @@ self.addEventListener('fetch', (e) => {
     return;
   }
 
-  // Network-first for HTML / JS / CSS — deploys land without manual SW kick.
+  // Network-first for HTML / JS / CSS - deploys land without manual SW kick.
   e.respondWith(
     fetch(e.request).then(res => {
       const copy = res.clone();
