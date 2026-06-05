@@ -39,7 +39,9 @@ async function init() {
   state.settings = await getSettings();
   await loadQuran(state.settings.script);
 
-  nav = mountNavigator(document.getElementById('cards'));
+  nav = mountNavigator(document.getElementById('cards'), {
+    onChange: (name) => { if (name === 'welcome') refreshResume(); }
+  });
 
   // --- Welcome card ---
   const welcomeEl = document.createElement('div');
@@ -96,8 +98,13 @@ async function init() {
   });
 
   // Land on welcome and surface the resume affordance if a last position
-  // exists.
+  // exists. refreshResume() also fires via onChange whenever welcome is
+  // re-activated, so the label stays current after returning from practice.
   nav.go('welcome');
+  await refreshResume();
+}
+
+async function refreshResume() {
   const last = await getLastPosition();
   if (last && last.mode in MODE_PRESETS) {
     const meta = getSurah(last.surah);
@@ -316,7 +323,7 @@ function handleNextAyah() {
     markVerseSkipped({ surah: state.surah, ayah: state.ayah, rawText: rt })
       .catch(() => {});
   } catch {}
-  advanceToNextAyah({ skipped: true });
+  advanceToNextAyah();
 }
 
 const BATCH_SIZE = 20;
@@ -352,7 +359,7 @@ function handleVerseComplete({ surah, ayah, rawText, perfect }) {
     batchState.mistakes = [];
   }
 
-  advanceToNextAyah({ skipped: false });
+  advanceToNextAyah();
 }
 
 function promptBatchRetry() {
@@ -398,7 +405,7 @@ function advanceRetryQueue() {
 function skipRetry() {
   batchState.count = 0;
   batchState.mistakes = [];
-  advanceToNextAyah({ skipped: false });
+  advanceToNextAyah();
 }
 
 function exitRetryFlow() {

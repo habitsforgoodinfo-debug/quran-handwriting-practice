@@ -7,7 +7,13 @@ class StubClassList {
   add(...names) { for (const n of names) this._set.add(n); this._sync(); }
   remove(...names) { for (const n of names) this._set.delete(n); this._sync(); }
   contains(name) { return this._set.has(name); }
-  toggle(name) { if (this._set.has(name)) this._set.delete(name); else this._set.add(name); this._sync(); }
+  toggle(name, force) {
+    if (force === true) this._set.add(name);
+    else if (force === false) this._set.delete(name);
+    else if (this._set.has(name)) this._set.delete(name);
+    else this._set.add(name);
+    this._sync();
+  }
   _sync() { this.el._className = [...this._set].join(' '); }
 }
 
