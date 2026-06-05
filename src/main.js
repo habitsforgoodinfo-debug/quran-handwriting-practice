@@ -40,7 +40,7 @@ async function init() {
   await loadQuran(state.settings.script);
 
   nav = mountNavigator(document.getElementById('cards'), {
-    onChange: (name) => { if (name === 'welcome') refreshResume(); }
+    onChange: (name) => { if (name === 'welcome') refreshResume().catch(() => {}); }
   });
 
   // --- Welcome card ---
@@ -101,7 +101,6 @@ async function init() {
   // exists. refreshResume() also fires via onChange whenever welcome is
   // re-activated, so the label stays current after returning from practice.
   nav.go('welcome');
-  await refreshResume();
 }
 
 async function refreshResume() {
