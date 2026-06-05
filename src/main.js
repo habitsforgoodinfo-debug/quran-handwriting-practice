@@ -8,6 +8,8 @@ import { mountNavigator } from './ui/navigator.js';
 import { mountWelcome } from './ui/screens/welcome.js';
 import { mountSurahGrid } from './ui/screens/surah-grid.js';
 import { mountDrawer } from './ui/drawer.js';
+import { mountCelebration } from './ui/celebration.js';
+import { starsFor } from './stats/stars.js';
 import { resolveModeConfig, MODE_PRESETS } from './modes/presets.js';
 import { getLastPosition, setLastPosition } from './store/session.js';
 import { getSettings, updateSettings } from './store/settings.js';
@@ -30,7 +32,7 @@ const state = {
   settings: null
 };
 const player = new AyahPlayer();
-let practiceApi, keypadApi, rollingApi, nav, welcomeApi, gridApi;
+let practiceApi, keypadApi, rollingApi, nav, welcomeApi, gridApi, celebrationApi;
 
 // Tracks which surah the rolling strip currently holds verses for, so we
 // can clear it when the user switches to a different surah.
@@ -102,6 +104,9 @@ async function init() {
     onOpenSettings: openSettings,
     onBackToSurahs: () => nav.go('surahs')
   });
+
+  // Surah-completion celebration overlay (mounted once, shown on demand).
+  celebrationApi = mountCelebration(document.body);
 
   // Land on welcome and surface the resume affordance if a last position
   // exists. refreshResume() also fires via onChange whenever welcome is
@@ -349,10 +354,13 @@ const batchState = {
   resumeAyah: null
 };
 
-function handleVerseComplete({ surah, ayah, rawText, perfect }) {
+async function handleVerseComplete({ surah, ayah, rawText, perfect }) {
   chimeComplete();
   rollingApi?.pushVerse(rawText);
-  markVerseComplete({ surah, ayah, rawText, perfect })
+  // Await the write so downstream reads (surah stars/celebration) see this
+  // verse as recorded. The completion handler is fired-and-forgotten from a
+  // timer, so awaiting here is safe.
+  await markVerseComplete({ surah, ayah, rawText, perfect })
     .catch(err => console.warn('markVerseComplete failed:', err));
 
   if (batchState.inRetryMode) {
@@ -449,16 +457,46 @@ function jumpToVerse(surah, ayah, slide = true) {
 function advanceToNextAyah({ slide = true } = {}) {
   const nextAyah = state.ayah + 1;
   if (nextAyah > state.surahMax) {
-    practiceApi.showRangeEnd([
-      { label: 'Practice this surah again', cls: 'primary',
-        onClick: () => loadCurrentSurahFromStart() },
-      { label: 'Pick another surah', cls: 'secondary',
-        onClick: () => nav.go('surahs') }
-    ]);
+    const finishedSurah = state.surah;
+    const finishedName = state.surahName;
+    showRangeEndBanner();
+    // Celebrate over the banner once the surah's stars are known.
+    celebrateSurah(finishedSurah, finishedName).catch(() => {});
     return;
   }
   state.ayah = nextAyah;
   loadCurrentVerse({ slide: true, autoPlay: state.matcherConfig?.isDictation });
+}
+
+function showRangeEndBanner() {
+  practiceApi.showRangeEnd([
+    { label: 'Practice this surah again', cls: 'primary',
+      onClick: () => loadCurrentSurahFromStart() },
+    { label: 'Pick another surah', cls: 'secondary',
+      onClick: () => nav.go('surahs') }
+  ]);
+}
+
+// Compute stars for a just-finished surah from stored stats and pop the
+// celebration overlay above the banner. Only celebrates when the surah is
+// actually fully written (starsFor returns >= 1).
+async function celebrateSurah(surah, surahName) {
+  if (!celebrationApi) return;
+  const [accMap, progressBySurah] = await Promise.all([
+    getAllSurahAccuracy(),
+    buildProgressBySurah()
+  ]);
+  const meta = getSurah(surah);
+  const total = meta?.verses || 1;
+  const prog = progressBySurah?.[surah] || progressBySurah?.[String(surah)];
+  const written = prog?.written ?? 0;
+  const acc = accMap?.[String(surah)];
+  const pct = (acc && acc.attempts > 0)
+    ? Math.round((acc.hits / acc.attempts) * 100)
+    : 0;
+  const stars = starsFor({ written, total, accuracyPct: pct });
+  if (stars <= 0) return;
+  celebrationApi.show({ surahName, stars });
 }
 
 function loadCurrentSurahFromStart() {
