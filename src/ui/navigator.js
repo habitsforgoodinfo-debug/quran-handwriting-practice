@@ -11,6 +11,7 @@ export function mountNavigator(rootEl) {
     if (swipeStartX !== null && e.clientX - swipeStartX > 60) back();
     swipeStartX = null;
   });
+  rootEl.addEventListener('pointercancel', () => { swipeStartX = null; });
 
   function _activate(name, pushLeft) {
     for (const [n, el] of cards) {
@@ -27,6 +28,7 @@ export function mountNavigator(rootEl) {
 
   function go(name, { direction } = {}) {
     if (!cards.has(name)) return;
+    if (history[history.length - 1] === name) return;
     const pushLeft = direction === 'back';
     history.push(name);
     _activate(name, pushLeft);

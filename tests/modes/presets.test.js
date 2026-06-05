@@ -37,3 +37,23 @@ test('presets: resolveModeConfig returns a copy, not the preset reference', () =
   cfg.isDictation = true;
   assert.equal(MODE_PRESETS.thorough.isDictation, false);
 });
+
+test('presets: mutating returned requiredLetters does not affect preset or next call', () => {
+  const cfg1 = resolveModeConfig('refresher', {});
+  cfg1.requiredLetters.push('X');
+  assert.notDeepEqual(MODE_PRESETS.refresher.requiredLetters, cfg1.requiredLetters,
+    'preset.requiredLetters should be unaffected by mutation of returned array');
+  const cfg2 = resolveModeConfig('refresher', {});
+  assert.deepEqual(cfg2.requiredLetters, DEFAULT_REQUIRED_LETTERS,
+    'second resolveModeConfig call should return original requiredLetters');
+});
+
+test('presets: mutating returned requiredHarakat does not affect preset or next call', () => {
+  const cfg1 = resolveModeConfig('refresher', {});
+  cfg1.requiredHarakat.push('X');
+  assert.deepEqual(MODE_PRESETS.refresher.requiredHarakat, [],
+    'preset.requiredHarakat should be unaffected by mutation of returned array');
+  const cfg2 = resolveModeConfig('refresher', {});
+  assert.deepEqual(cfg2.requiredHarakat, [],
+    'second resolveModeConfig call should return original requiredHarakat');
+});

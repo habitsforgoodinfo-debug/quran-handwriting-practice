@@ -9,5 +9,9 @@ export const MODE_PRESETS = {
 export function resolveModeConfig(mode, _settings) {
   const preset = MODE_PRESETS[mode];
   if (!preset) throw new Error(`Unknown mode: ${mode}`);
-  return { ...preset };
+  return {
+    ...preset,
+    requiredLetters: preset.requiredLetters ? [...preset.requiredLetters] : null,
+    requiredHarakat: [...preset.requiredHarakat],
+  };
 }
