@@ -1,0 +1,47 @@
+// Card-stack screen router. All motion is driven by CSS classes; no inline
+// transforms here. CSS for .card, .card--active, .card--left lands later.
+
+export function mountNavigator(rootEl) {
+  const cards = new Map(); // name -> element
+  let history = [];        // stack of card names
+  let swipeStartX = null;
+
+  rootEl.addEventListener('pointerdown', (e) => { swipeStartX = e.clientX; });
+  rootEl.addEventListener('pointerup', (e) => {
+    if (swipeStartX !== null && e.clientX - swipeStartX > 60) back();
+    swipeStartX = null;
+  });
+
+  function _activate(name, pushLeft) {
+    for (const [n, el] of cards) {
+      el.classList.toggle('card--active', n === name);
+      el.classList.toggle('card--left',   n !== name && pushLeft);
+    }
+  }
+
+  function register(name, el) {
+    el.classList.add('card');
+    rootEl.appendChild(el);
+    cards.set(name, el);
+  }
+
+  function go(name, { direction } = {}) {
+    if (!cards.has(name)) return;
+    const pushLeft = direction === 'back';
+    history.push(name);
+    _activate(name, pushLeft);
+  }
+
+  function back() {
+    if (history.length <= 1) return;
+    history.pop();
+    const prev = history[history.length - 1];
+    _activate(prev, false);
+  }
+
+  function current() {
+    return history[history.length - 1] ?? null;
+  }
+
+  return { register, go, back, current };
+}
