@@ -32,7 +32,10 @@ export const DEFAULT_SETTINGS = Object.freeze({
   hideIntro: false,
   autoPlayOnAyahLoad: false,
   requiredLetters: DEFAULT_REQUIRED_LETTERS,
-  requiredHarakat: ALL_HARAKAT,
+  // Empty array = auto-fill all harakat (no diacritics need to be typed).
+  // Previously this was ALL_HARAKAT (all required), which made the
+  // "Auto-fill all harakat" checkbox start unchecked - the wrong default.
+  requiredHarakat: [],
   quickTestEvery20: true
 });
 
@@ -53,6 +56,18 @@ function migrate(stored) {
       out.requiredLetters = ALL_LETTERS.filter(l => !optSet.has(l));
     }
     delete out.optionalLetters;
+  }
+  // The old default was ALL_HARAKAT (all diacritics required). The new default
+  // is [] (auto-fill all). A user who stored exactly the old default - meaning
+  // they never deliberately chose "all harakat required" - gets migrated to []
+  // once. A user who genuinely selected every single harakat is reset once;
+  // they can toggle back in settings. This is an acceptable one-time reset.
+  if (
+    Array.isArray(out.requiredHarakat) &&
+    out.requiredHarakat.length === ALL_HARAKAT.length &&
+    ALL_HARAKAT.every(h => out.requiredHarakat.includes(h))
+  ) {
+    out.requiredHarakat = [];
   }
   return out;
 }

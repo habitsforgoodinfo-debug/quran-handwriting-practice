@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getSettings, updateSettings, DEFAULT_SETTINGS } from '../../src/store/settings.js';
+import { getSettings, updateSettings, DEFAULT_SETTINGS, ALL_HARAKAT } from '../../src/store/settings.js';
 
 function makeMockDb() {
   const map = new Map();
@@ -80,4 +80,26 @@ test('settings: legacy hintLevel="full" migrates to hintPolicy="auto"', async ()
   db.map.set('settings', { hintLevel: 'full' });
   const s = await getSettings(db);
   assert.equal(s.hintPolicy, 'auto');
+});
+
+test('settings: default requiredHarakat is [] (auto-fill on)', async () => {
+  const db = makeMockDb();
+  const s = await getSettings(db);
+  assert.deepEqual(s.requiredHarakat, []);
+});
+
+test('settings: legacy ALL_HARAKAT stored default migrates to [] (auto-fill on)', async () => {
+  const db = makeMockDb();
+  // Simulate a user whose settings were saved with the old default (ALL_HARAKAT).
+  db.map.set('settings', { requiredHarakat: [...ALL_HARAKAT] });
+  const s = await getSettings(db);
+  assert.deepEqual(s.requiredHarakat, []);
+});
+
+test('settings: partial harakat selection is preserved and not migrated', async () => {
+  const db = makeMockDb();
+  // A user who deliberately chose only fatha and kasra — must not be wiped.
+  db.map.set('settings', { requiredHarakat: ['fatha', 'kasra'] });
+  const s = await getSettings(db);
+  assert.deepEqual(s.requiredHarakat, ['fatha', 'kasra']);
 });
