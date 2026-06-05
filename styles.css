@@ -330,6 +330,20 @@ html, body {
 .card--active { transform: translateX(0); }
 .card--left   { transform: translateX(-100%); }
 
+/* --- Canvas card layout (replaces old #verse-display / #keypad-view) --- */
+.canvas { overflow: hidden; }
+.canvas .practice-view { flex: 1 1 auto; padding: 12px; padding-top: 44px; overflow-y: auto; min-height: 0; }
+.canvas .rolling-strip { flex: 0 0 auto; }
+.keypad-view {
+  flex: 0 0 auto;
+  border-top: 1px solid #eee2cf;
+  padding: 8px;
+  background: #ffffff;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
 /* --- Welcome screen --- */
 .welcome {
   display: flex;

@@ -1,17 +1,19 @@
 import { loadQuran, getVerse } from './data/quran-loader.js';
 import { getSurah } from './data/surah-metadata.js';
-import { mountHeader } from './ui/header.js';
 import { mountPracticeView } from './ui/practice-view.js';
 import { mountKeypad } from './ui/keypad.js';
 import { mountRollingStrip } from './ui/rolling-strip.js';
 import { mountSettingsModal } from './ui/settings-modal.js';
-import { mountMyBook } from './ui/my-book.js';
-import { mountIntro } from './ui/intro.js';
-import { pickRapidFireChallenge } from './ui/rapid-fire.js';
+import { mountNavigator } from './ui/navigator.js';
+import { mountWelcome } from './ui/screens/welcome.js';
+import { mountSurahGrid } from './ui/screens/surah-grid.js';
+import { mountDrawer } from './ui/drawer.js';
+import { resolveModeConfig } from './modes/presets.js';
+import { getLastPosition, setLastPosition } from './store/session.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
   recordError, recordAttempt,
-  getSurahAccuracy, getSurahProgress, getAllSurahAccuracy,
+  getAllSurahAccuracy,
   markVerseComplete, markVerseSkipped, resetStats,
   getCompletedVerses
 } from './store/stats.js';
@@ -20,10 +22,15 @@ import { chimeComplete } from './ui/feedback.js';
 
 const state = {
   surah: 1, ayah: 1, surahMax: 7, surahName: 'Al-Fatiha',
+  mode: null,
+  // matcherConfig is the active mode overlay. Null means "fall back to the
+  // user's settings-derived required letters/harakat" (used after a settings
+  // edit changes them for the rest of the session).
+  matcherConfig: null,
   settings: null
 };
 const player = new AyahPlayer();
-let practiceApi, keypadApi, headerApi, rollingApi;
+let practiceApi, keypadApi, rollingApi, nav, welcomeApi, gridApi;
 
 async function init() {
   if ('serviceWorker' in navigator) {
@@ -32,13 +39,43 @@ async function init() {
   state.settings = await getSettings();
   await loadQuran(state.settings.script);
 
-  const headerEl   = document.getElementById('header');
-  const practiceEl = document.getElementById('verse-display');
-  const rollingEl  = document.getElementById('rolling-strip');
-  const keypadEl   = document.getElementById('keypad-view');
+  nav = mountNavigator(document.getElementById('cards'));
+
+  // --- Welcome card ---
+  const welcomeEl = document.createElement('div');
+  nav.register('welcome', welcomeEl);
+  welcomeApi = mountWelcome(welcomeEl, {
+    onPickMode: (mode) => {
+      state.mode = mode;
+      state.matcherConfig = resolveModeConfig(mode, state.settings);
+      nav.go('surahs');
+      refreshGridStats();
+    },
+    onResume: () => resumeLast()
+  });
+
+  // --- Surahs card ---
+  const surahsEl = document.createElement('div');
+  nav.register('surahs', surahsEl);
+  gridApi = mountSurahGrid(surahsEl, {
+    onPick: ({ surah, ayah }) => startSurah({ surah, ayah }),
+    onBack: () => nav.back()
+  });
+
+  // --- Canvas card ---
+  const canvasEl = document.createElement('div');
+  canvasEl.className = 'canvas';
+  nav.register('canvas', canvasEl);
+
+  const practiceEl = document.createElement('div');
+  const rollingEl  = document.createElement('div');
+  const keypadEl   = document.createElement('div');
+  keypadEl.className = 'keypad-view';
+  canvasEl.append(practiceEl, rollingEl, keypadEl);
 
   practiceApi = mountPracticeView(practiceEl, {
-    onVerseComplete: handleVerseComplete
+    onVerseComplete: handleVerseComplete,
+    showTranslit: false
   });
 
   // Rolling strip starts empty every session — it shows only the verses
@@ -51,42 +88,82 @@ async function init() {
     onBackspace: handleBackspace,
     onPlayAudio: playCurrentAyah,
     onNextAyah:  handleNextAyah
-  }, { script: state.settings.script });
+  }, { script: state.settings.script, showAudio: false });
 
-  headerApi = mountHeader(headerEl, {
-    initial: { surah: state.surah, fromAyah: state.ayah, toAyah: state.ayah, script: state.settings.script },
-    onChange: handleRangeChange,
+  mountDrawer(canvasEl, {
     onOpenSettings: openSettings,
-    onScriptToggle: handleScriptToggle,
-    onOpenBook: () => mountMyBook(document.body),
-    onOpenRapidFire: openRapidFire,
-    onPrevAyah: handlePrevAyah,
-    onNextReviewAyah: handleNextReviewAyah
+    onBackToSurahs: () => nav.go('surahs')
   });
 
-  refreshHeaderStats();
-
-  if (!state.settings.hideIntro) {
-    mountIntro(document.body, {
-      onHide: async () => { state.settings = await updateSettings({ hideIntro: true }); }
-    });
+  // Land on welcome and surface the resume affordance if a last position
+  // exists.
+  nav.go('welcome');
+  const last = await getLastPosition();
+  if (last) {
+    const meta = getSurah(last.surah);
+    const name = meta?.name_en || `Surah ${last.surah}`;
+    welcomeApi.setResume(`Resume — ${name}, ayah ${last.ayah}`);
+  } else {
+    welcomeApi.setResume(null);
   }
 }
 
-async function refreshHeaderStats() {
-  const [accuracy, written, accBySurah] = await Promise.all([
-    getSurahAccuracy(state.surah),
-    getSurahProgress(state.surah),
-    getAllSurahAccuracy()
+// Derive per-surah progress from completed (non-skipped) verse records.
+// lastAyah is the next unwritten ayah = highest completed + 1, capped at the
+// surah's ayah count, so "Continue from ayah N" lands on the next gap.
+async function buildProgressBySurah() {
+  const completed = await getCompletedVerses();
+  const map = {};
+  for (const v of completed) {
+    if (!v || v.skipped) continue;
+    const entry = map[v.surah] || { written: 0, maxAyah: 0 };
+    entry.written++;
+    if (v.ayah > entry.maxAyah) entry.maxAyah = v.ayah;
+    map[v.surah] = entry;
+  }
+  const out = {};
+  for (const [surah, entry] of Object.entries(map)) {
+    const meta = getSurah(Number(surah));
+    const verses = meta?.verses || entry.maxAyah;
+    out[surah] = {
+      written: entry.written,
+      lastAyah: Math.min(entry.maxAyah + 1, verses)
+    };
+  }
+  return out;
+}
+
+async function refreshGridStats() {
+  const [accMap, progressBySurah] = await Promise.all([
+    getAllSurahAccuracy(),
+    buildProgressBySurah()
   ]);
-  headerApi.updateStats({
-    surah: state.surah,
-    surahName: state.surahName,
-    surahVerses: state.surahMax,
-    ayahsWritten: written,
-    accuracy
-  });
-  headerApi.updateSurahAccuracyMap(accBySurah);
+  gridApi.refreshStats({ accMap, progressBySurah });
+}
+
+function startSurah({ surah, ayah }) {
+  const meta = getSurah(surah);
+  state.surah = surah;
+  state.ayah  = ayah;
+  state.surahMax  = meta?.verses || 1;
+  state.surahName = meta?.name_en || `Surah ${surah}`;
+  nav.go('canvas');
+  loadCurrentVerse({ autoPlay: state.matcherConfig?.isDictation });
+}
+
+async function resumeLast() {
+  const last = await getLastPosition();
+  if (!last) return;
+  state.mode = last.mode;
+  state.matcherConfig = resolveModeConfig(last.mode, state.settings);
+  const meta = getSurah(last.surah);
+  const verses = meta?.verses || 1;
+  state.surah = last.surah;
+  state.surahMax  = verses;
+  state.surahName = meta?.name_en || `Surah ${last.surah}`;
+  state.ayah = Math.min(Math.max(1, last.ayah), verses);
+  nav.go('canvas');
+  loadCurrentVerse({ autoPlay: state.matcherConfig?.isDictation });
 }
 
 function refreshHints() {
@@ -155,9 +232,9 @@ function handleBackspace() {
   refreshHints();
 }
 
-// Review navigation. When user presses ← in the header, we step back
-// through the list of completed verses. Each subsequent ← goes further
-// back. → goes forward, ending at the live ayah (state.surah, state.ayah).
+// Review navigation. Kept for a later phase; no longer wired now that the
+// header (which triggered it) is gone. References headerApi lazily so it does
+// not throw at module load.
 let reviewPointer = null; // { surah, ayah } currently shown in review mode
 
 async function handlePrevAyah() {
@@ -202,7 +279,6 @@ async function handleNextReviewAyah() {
 
 function enterReview(verse) {
   practiceApi.showReview(verse);
-  headerApi.setReviewMode(true);
   keypadApi.setHandlers({
     onLetter: () => {},
     onHarakat: () => {},
@@ -215,7 +291,6 @@ function enterReview(verse) {
 function exitReview() {
   reviewPointer = null;
   practiceApi.exitReview();
-  headerApi.setReviewMode(false);
   keypadApi.setHandlers({
     onLetter:    handleLetter,
     onHarakat:   handleHarakat,
@@ -258,7 +333,6 @@ function handleVerseComplete({ surah, ayah, rawText, perfect }) {
   chimeComplete();
   rollingApi?.pushVerse(rawText);
   markVerseComplete({ surah, ayah, rawText, perfect })
-    .then(() => refreshHeaderStats())
     .catch(err => console.warn('markVerseComplete failed:', err));
 
   if (batchState.inRetryMode) {
@@ -355,10 +429,7 @@ function advanceToNextAyah({ slide = true } = {}) {
       { label: 'Practice this surah again', cls: 'primary',
         onClick: () => loadCurrentSurahFromStart() },
       { label: 'Pick another surah', cls: 'secondary',
-        onClick: () => {
-          const surahSel = document.querySelector('#header select.surah');
-          if (surahSel) { surahSel.focus(); surahSel.scrollIntoView({ behavior: 'smooth' }); }
-        } }
+        onClick: () => nav.go('surahs') }
     ]);
     return;
   }
@@ -373,36 +444,29 @@ function loadCurrentSurahFromStart() {
 
 function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
   const rawText = getVerse(state.surah, state.ayah);
+  // Mode overlay takes precedence; null overlay falls back to settings.
+  const requiredLetters = state.matcherConfig
+    ? state.matcherConfig.requiredLetters
+    : (state.settings.requiredLetters || null);
+  const requiredHarakat = state.matcherConfig
+    ? state.matcherConfig.requiredHarakat
+    : (state.settings.requiredHarakat || null);
   practiceApi.setVerse({
     surah: state.surah,
     surahName: state.surahName,
     ayah: state.ayah,
     rawText,
     slide,
-    requiredLetters: state.settings.requiredLetters || null,
-    requiredHarakat: state.settings.requiredHarakat || null
+    requiredLetters,
+    requiredHarakat
   });
   refreshHints();
+  // Single choke point for persisting where the user is.
+  setLastPosition({ surah: state.surah, ayah: state.ayah, mode: state.mode })
+    .catch(() => {});
   if (autoPlay || state.settings.autoPlayOnAyahLoad) {
     setTimeout(() => playAyah(state.surah, state.ayah), 350);
   }
-}
-
-async function handleScriptToggle(nextScript) {
-  state.settings = await updateSettings({ script: nextScript });
-  await loadQuran(nextScript);
-  if (keypadApi.setScript) keypadApi.setScript(nextScript);
-  loadCurrentVerse();
-}
-
-function handleRangeChange({ surah, fromAyah }) {
-  state.surah = surah;
-  state.ayah = fromAyah;
-  const meta = getSurah(surah);
-  state.surahMax = meta?.verses || 1;
-  state.surahName = meta?.name_en || `Surah ${surah}`;
-  loadCurrentVerse();
-  refreshHeaderStats();
 }
 
 function openSettings() {
@@ -410,30 +474,16 @@ function openSettings() {
     settings: state.settings,
     onChange: async (patch) => {
       state.settings = await updateSettings(patch);
+      // A change to the required letters/harakat overrides the mode overlay
+      // for the rest of the session.
       if ('requiredLetters' in patch || 'requiredHarakat' in patch) {
+        state.matcherConfig = null;
         loadCurrentVerse();
       }
       refreshHints();
     },
-    onResetStats: async () => { await resetStats(); refreshHeaderStats(); }
+    onResetStats: async () => { await resetStats(); refreshGridStats(); }
   });
-}
-
-async function openRapidFire() {
-  const challenge = await pickRapidFireChallenge();
-  if (!challenge) {
-    showRetryToast('No rapid-fire challenges yet — write some verses first.', () => {});
-    return;
-  }
-  // Jump to the challenge verse using the normal canvas, then play its audio
-  // once so the user hears what they have to write.
-  const meta = getSurah(challenge.surah);
-  state.surah = challenge.surah;
-  state.ayah  = challenge.ayah;
-  state.surahMax  = meta?.verses || 1;
-  state.surahName = meta?.name_en || `Surah ${challenge.surah}`;
-  loadCurrentVerse({ slide: true });
-  setTimeout(() => playAyah(challenge.surah, challenge.ayah), 350);
 }
 
 function playCurrentAyah() {
