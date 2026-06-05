@@ -40,7 +40,10 @@ async function init() {
   await loadQuran(state.settings.script);
 
   nav = mountNavigator(document.getElementById('cards'), {
-    onChange: (name) => { if (name === 'welcome') refreshResume().catch(() => {}); }
+    onChange: (name) => {
+      if (name === 'welcome') refreshResume().catch(() => {});
+      if (name === 'surahs') refreshGridStats().catch(() => {});
+    }
   });
 
   // --- Welcome card ---
@@ -51,7 +54,6 @@ async function init() {
       state.mode = mode;
       state.matcherConfig = resolveModeConfig(mode, state.settings);
       nav.go('surahs');
-      refreshGridStats();
     },
     onResume: () => resumeLast()
   });
