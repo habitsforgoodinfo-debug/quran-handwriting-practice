@@ -32,6 +32,10 @@ const state = {
 const player = new AyahPlayer();
 let practiceApi, keypadApi, rollingApi, nav, welcomeApi, gridApi;
 
+// Tracks which surah the rolling strip currently holds verses for, so we
+// can clear it when the user switches to a different surah.
+let rollingStripSurah = null;
+
 async function init() {
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('./service-worker.js').catch(() => {});
@@ -155,6 +159,10 @@ function startSurah({ surah, ayah }) {
   state.ayah  = ayah;
   state.surahMax  = meta?.verses || 1;
   state.surahName = meta?.name_en || `Surah ${surah}`;
+  if (rollingApi && surah !== rollingStripSurah) {
+    rollingApi.clear();
+    rollingStripSurah = surah;
+  }
   nav.go('canvas');
   loadCurrentVerse({ autoPlay: state.matcherConfig?.isDictation });
 }
@@ -170,6 +178,10 @@ async function resumeLast() {
   state.surahMax  = verses;
   state.surahName = meta?.name_en || `Surah ${last.surah}`;
   state.ayah = Math.min(Math.max(1, last.ayah), verses);
+  if (rollingApi && last.surah !== rollingStripSurah) {
+    rollingApi.clear();
+    rollingStripSurah = last.surah;
+  }
   nav.go('canvas');
   loadCurrentVerse({ autoPlay: state.matcherConfig?.isDictation });
 }
