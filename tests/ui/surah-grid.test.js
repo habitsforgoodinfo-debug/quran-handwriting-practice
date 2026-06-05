@@ -73,3 +73,63 @@ test('surah-grid: refreshStats tolerates missing progress entries', () => {
   assert.doesNotThrow(() => refreshStats({}));
   assert.doesNotThrow(() => refreshStats({ accMap: undefined, progressBySurah: undefined }));
 });
+
+// --- Inline choice interaction tests ---
+
+function setupWithProgress() {
+  globalThis.document = makeDocument();
+  const root = document.createElement('div');
+  const picks = [];
+  const { refreshStats } = mountSurahGrid(root, {
+    onPick: (p) => picks.push(p),
+    onBack: () => {},
+  });
+  // Surah 1 has lastAyah=4 (> 1), so tapping the tile opens the choice.
+  refreshStats({ accMap: {}, progressBySurah: { 1: { written: 3, lastAyah: 4 } } });
+  const tile = root.querySelectorAll('.surah-tile')[0];
+  // Open the choice.
+  tile.dispatch('click', { target: tile });
+  return { root, tile, picks };
+}
+
+test('surah-grid: "Start over" calls onPick({surah, ayah:1}) and collapses choice', () => {
+  const { tile, picks } = setupWithProgress();
+  const choice = tile.querySelector('.surah-tile__choice');
+  assert.ok(choice, 'choice should be open');
+
+  const startBtn = choice.querySelector('.surah-tile__choice-btn--start');
+  assert.ok(startBtn, 'start button should exist');
+  startBtn.dispatch('click', { target: startBtn });
+
+  assert.equal(picks.length, 1);
+  assert.deepEqual(picks[0], { surah: 1, ayah: 1 });
+  // Choice should be gone after click.
+  assert.ok(!tile.querySelector('.surah-tile__choice'), 'choice should collapse after Start over');
+});
+
+test('surah-grid: "Continue from ayah N" calls onPick({surah, ayah:lastAyah}) and collapses choice', () => {
+  const { tile, picks } = setupWithProgress();
+  const choice = tile.querySelector('.surah-tile__choice');
+  assert.ok(choice, 'choice should be open');
+
+  const contBtn = choice.querySelector('.surah-tile__choice-btn--continue');
+  assert.ok(contBtn, 'continue button should exist');
+  contBtn.dispatch('click', { target: contBtn });
+
+  assert.equal(picks.length, 1);
+  assert.deepEqual(picks[0], { surah: 1, ayah: 4 });
+  // Choice should be gone after click.
+  assert.ok(!tile.querySelector('.surah-tile__choice'), 'choice should collapse after Continue');
+});
+
+test('surah-grid: outside tap collapses choice without calling onPick', () => {
+  const { root, tile, picks } = setupWithProgress();
+  assert.ok(tile.querySelector('.surah-tile__choice'), 'choice should be open');
+
+  // Dispatch a click on root with a target that is NOT inside the open tile.
+  const outsideEl = document.createElement('div');
+  root.dispatch('click', { target: outsideEl });
+
+  assert.equal(picks.length, 0, 'onPick should not fire on outside tap');
+  assert.ok(!tile.querySelector('.surah-tile__choice'), 'choice should collapse on outside tap');
+});

@@ -437,6 +437,9 @@ html, body {
 }
 
 .surah-tile {
+  appearance: none;
+  font: inherit;
+  text-align: left;
   display: flex;
   flex-direction: column;
   gap: 2px;
@@ -447,6 +450,7 @@ html, body {
   cursor: pointer;
   transition: background 120ms ease, border-color 120ms ease;
   position: relative;
+  width: 100%;
 }
 .surah-tile:hover  { background: #f6f1e6; border-color: #bfb49e; }
 .surah-tile:active { background: #ede6d6; }

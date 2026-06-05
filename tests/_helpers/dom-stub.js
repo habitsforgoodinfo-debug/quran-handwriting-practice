@@ -69,7 +69,14 @@ class StubNode {
     if (i >= 0) arr.splice(i, 1);
   }
   dispatch(name, event = {}) {
+    if (!event.stopPropagation) event.stopPropagation = () => {};
     for (const fn of this._listeners[name] || []) fn(event);
+  }
+  contains(node) {
+    for (const c of this.children) {
+      if (c === node || c.contains(node)) return true;
+    }
+    return false;
   }
   setAttribute(k, v) { this._attrs[k] = String(v); }
   getAttribute(k) { return this._attrs[k]; }

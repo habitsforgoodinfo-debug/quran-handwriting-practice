@@ -44,8 +44,10 @@ export function mountSurahGrid(rootEl, { onPick, onBack }) {
   }
 
   for (const s of SURAHS) {
-    const tile = document.createElement('div');
+    const tile = document.createElement('button');
+    tile.type = 'button';
     tile.className = 'surah-tile';
+    tile.setAttribute('aria-label', `Surah ${s.number}: ${s.name_en}`);
 
     const numEl = document.createElement('span');
     numEl.className = 'surah-tile__num';
