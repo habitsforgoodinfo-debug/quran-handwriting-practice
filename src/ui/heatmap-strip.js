@@ -9,6 +9,7 @@ export function mountHeatmapStrip(root) {
   posEl.className = 'progress-pos';
   const meaningEl = document.createElement('span');
   meaningEl.className = 'progress-meaning';
+
   root.append(posEl, meaningEl);
 
   function update(payload) {

@@ -27,6 +27,16 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
 
   const progressStrip = mountHeatmapStrip(progressRoot);
 
+  // Replay button - appended after strip inside progressRoot, hidden by default.
+  // Shown only in dictation mode via setReplay().
+  const replayBtn = document.createElement('button');
+  replayBtn.className = 'replay-btn';
+  replayBtn.textContent = '↺';
+  replayBtn.title = 'Replay ayah';
+  replayBtn.setAttribute('aria-label', 'Replay ayah audio');
+  replayBtn.style.display = 'none';
+  progressRoot.appendChild(replayBtn);
+
   let surah = 0;
   let surahName = '';
   let ayah = 0;
@@ -248,6 +258,16 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
     getCurrentAyah: () => ayah,
     getCurrentSurah: () => surah,
     setMeaningLookup: () => {}, // no-op now; transliteration covers it
+    // Show/hide the dictation replay button. Pass a callback to show; null hides.
+    setReplay(fn) {
+      if (fn) {
+        replayBtn.style.display = '';
+        replayBtn.onclick = fn;
+      } else {
+        replayBtn.style.display = 'none';
+        replayBtn.onclick = null;
+      }
+    },
     // legacy aliases
     setVerses: (verses) => {
       if (!verses || verses.length === 0) {

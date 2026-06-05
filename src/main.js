@@ -461,6 +461,10 @@ function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
     requiredHarakat
   });
   refreshHints();
+  // Show replay button only in dictation mode.
+  practiceApi.setReplay(
+    state.matcherConfig?.isDictation ? playCurrentAyah : null
+  );
   // Single choke point for persisting where the user is.
   setLastPosition({ surah: state.surah, ayah: state.ayah, mode: state.mode })
     .catch(() => {});

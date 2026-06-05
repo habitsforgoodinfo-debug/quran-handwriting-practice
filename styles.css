@@ -147,6 +147,21 @@ html, body {
 .progress-meaning__tl   { font-style: italic; color: #1c1c1c; }
 .progress-meaning__root { color: #8a6300; }
 
+/* Dictation replay button inside the progress-strip row */
+.replay-btn {
+  margin-left: 4px;
+  background: none;
+  border: 1px solid #d8cdb8;
+  border-radius: 6px;
+  color: #1cb0f6;
+  font-size: 14px;
+  line-height: 1;
+  padding: 1px 6px;
+  cursor: pointer;
+  vertical-align: middle;
+}
+.replay-btn:hover { background: #e8f6fe; border-color: #b9e3fb; }
+
 .keypad-harakat { display: grid; grid-template-columns: repeat(12, 1fr); gap: 3px; }
 .keypad-letters { display: flex; flex-direction: column; gap: 4px; }
 .keypad-row     { display: grid; gap: 4px; }
