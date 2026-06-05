@@ -79,6 +79,7 @@ async function init() {
 
   const practiceEl = document.createElement('div');
   const rollingEl  = document.createElement('div');
+  rollingEl.className = 'rolling-host';
   const keypadEl   = document.createElement('div');
   keypadEl.className = 'keypad-view';
   canvasEl.append(practiceEl, rollingEl, keypadEl);
