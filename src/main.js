@@ -8,7 +8,7 @@ import { mountNavigator } from './ui/navigator.js';
 import { mountWelcome } from './ui/screens/welcome.js';
 import { mountSurahGrid } from './ui/screens/surah-grid.js';
 import { mountDrawer } from './ui/drawer.js';
-import { resolveModeConfig } from './modes/presets.js';
+import { resolveModeConfig, MODE_PRESETS } from './modes/presets.js';
 import { getLastPosition, setLastPosition } from './store/session.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
@@ -99,10 +99,10 @@ async function init() {
   // exists.
   nav.go('welcome');
   const last = await getLastPosition();
-  if (last) {
+  if (last && last.mode in MODE_PRESETS) {
     const meta = getSurah(last.surah);
     const name = meta?.name_en || `Surah ${last.surah}`;
-    welcomeApi.setResume(`Resume — ${name}, ayah ${last.ayah}`);
+    welcomeApi.setResume(`Resume - ${name}, ayah ${last.ayah}`);
   } else {
     welcomeApi.setResume(null);
   }
@@ -153,7 +153,7 @@ function startSurah({ surah, ayah }) {
 
 async function resumeLast() {
   const last = await getLastPosition();
-  if (!last) return;
+  if (!last || !(last.mode in MODE_PRESETS)) return;
   state.mode = last.mode;
   state.matcherConfig = resolveModeConfig(last.mode, state.settings);
   const meta = getSurah(last.surah);
@@ -419,7 +419,7 @@ function jumpToVerse(surah, ayah, slide = true) {
   state.ayah  = ayah;
   state.surahMax  = meta?.verses || 1;
   state.surahName = meta?.name_en || `Surah ${surah}`;
-  loadCurrentVerse({ slide });
+  loadCurrentVerse({ slide, autoPlay: state.matcherConfig?.isDictation });
 }
 
 function advanceToNextAyah({ slide = true } = {}) {
@@ -434,12 +434,12 @@ function advanceToNextAyah({ slide = true } = {}) {
     return;
   }
   state.ayah = nextAyah;
-  loadCurrentVerse({ slide: true });
+  loadCurrentVerse({ slide: true, autoPlay: state.matcherConfig?.isDictation });
 }
 
 function loadCurrentSurahFromStart() {
   state.ayah = 1;
-  loadCurrentVerse({ slide: true });
+  loadCurrentVerse({ slide: true, autoPlay: state.matcherConfig?.isDictation });
 }
 
 function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
