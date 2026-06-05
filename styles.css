@@ -240,7 +240,7 @@ html, body {
 
 /* --- Canvas card layout (replaces old #verse-display / #keypad-view) --- */
 .canvas { overflow: hidden; }
-/* practice-view shrinks to fit its content (translit + user-pane); rolling
+/* practice-view shrinks to fit its content (user-pane + progress); rolling
    strip fills all remaining vertical space so there is no dead gap. */
 .canvas .practice-view { flex: 0 0 auto; padding: 12px; padding-top: 44px; overflow-y: auto; }
 .canvas .rolling-strip { flex: 1 1 auto; min-height: 0; }

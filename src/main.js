@@ -439,6 +439,10 @@ function jumpToVerse(surah, ayah, slide = true) {
   state.ayah  = ayah;
   state.surahMax  = meta?.verses || 1;
   state.surahName = meta?.name_en || `Surah ${surah}`;
+  if (rollingApi && surah !== rollingStripSurah) {
+    rollingApi.clear();
+    rollingStripSurah = surah;
+  }
   loadCurrentVerse({ slide, autoPlay: state.matcherConfig?.isDictation });
 }
 
