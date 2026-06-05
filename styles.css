@@ -1,5 +1,5 @@
 /* ============================================================
-   Design tokens — a small, consistent, kid-friendly palette.
+   Design tokens - a small, consistent, kid-friendly palette.
    Warm cream base + a vibrant family used across the app.
    ============================================================ */
 :root {
@@ -56,7 +56,7 @@ html, body {
 #header select.surah { flex: 1 1 200px; min-width: 0; }
 #header input.from { width: 60px; }
 .header-stats { flex-basis: 100%; font-size: 12px; color: #5b5346; padding-top: 2px; }
-/* Surah accuracy badge — option label gets a percentage suffix, painted red
+/* Surah accuracy badge - option label gets a percentage suffix, painted red
    when the user is below 50% accuracy on that surah. */
 #header select.surah option.surah-opt--low { color: #c41a1a; }
 
@@ -68,7 +68,7 @@ html, body {
   border-radius: 8px; padding: 6px 10px; font-size: 14px; cursor: pointer;
 }
 
-/* Upper section — transliteration only. Capped at 2 lines, scrolls. */
+/* Upper section - transliteration only. Capped at 2 lines, scrolls. */
 .translit-pane {
   font-family: 'Nunito','Inter',system-ui,sans-serif;
   font-size: 18px; line-height: 1.55;
@@ -99,7 +99,7 @@ html, body {
 }
 .translit-word--future  { color: #9aa0a6; }
 
-/* Middle section — Arabic the user is typing. Capped at 3 lines, scrolls. */
+/* Middle section - Arabic the user is typing. Capped at 3 lines, scrolls. */
 .user-pane {
   font-family: 'Amiri','NotoNaskhArabic',serif;
   direction: rtl; text-align: right;
@@ -118,7 +118,7 @@ html, body {
 .user-glyph.silent { color: #9aa0a6; opacity: 0.7; }
 .user-glyph.auto { color: #2c8a02; opacity: 0.55; }
 
-/* Rolling strip — a continuous mushaf-style running paragraph of the
+/* Rolling strip - a continuous mushaf-style running paragraph of the
    verses the user has written, between the canvas and the keypad. */
 #rolling-strip { display: block; }
 .rolling-strip {
@@ -179,7 +179,7 @@ html, body {
 .banner-btn.primary   { background: var(--c-green); color: white; border-color: var(--c-green-deep); font-weight: 800; }
 .banner-btn.secondary { background: var(--c-paper); color: var(--c-ink); }
 
-/* Progress + meaning strip (was heatmap) — now a visible pill. */
+/* Progress + meaning strip (was heatmap) - now a visible pill. */
 .progress-strip {
   display: inline-flex; gap: 8px; align-items: center;
   padding: 5px 12px; font-size: 14px; color: var(--c-sky-deep);
@@ -503,7 +503,7 @@ html, body {
 .surah-tile:hover  { transform: translateY(-1px); box-shadow: var(--shadow-md); }
 .surah-tile:active { transform: translateY(1px) scale(0.99); box-shadow: var(--shadow-sm); }
 
-/* Accuracy tiers — coral low, amber mid, green good. */
+/* Accuracy tiers - coral low, amber mid, green good. */
 .surah-tile--low       { background: var(--c-coral-tint); border-color: #f4b9c1; }
 .surah-tile--acc-mid   { background: var(--c-amber-tint); border-color: #ecd58c; }
 .surah-tile--acc-good  { background: var(--c-green-tint); border-color: #c2e89a; }

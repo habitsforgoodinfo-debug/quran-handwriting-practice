@@ -8,7 +8,7 @@
 //      matcher demands has a corresponding keypad button mapped.
 //
 // A failure means a verse contains a letter or diacritic the user
-// cannot type via the on-screen keypad — i.e. it would freeze the
+// cannot type via the on-screen keypad - i.e. it would freeze the
 // practice loop in the browser.
 //
 // Run on demand:

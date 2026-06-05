@@ -12,7 +12,7 @@ export async function pickRapidFireChallenge() {
   const completed = await getCompletedVerses();
   const pool = completed.filter(v => !v.perfect || v.skipped);
   if (pool.length === 0) return null;
-  // Oldest first — gives a sense of revisiting old mistakes.
+  // Oldest first - gives a sense of revisiting old mistakes.
   pool.sort((a, b) => (a.completedAt || 0) - (b.completedAt || 0));
   return pool[0];
 }

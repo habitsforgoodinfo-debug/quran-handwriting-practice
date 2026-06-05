@@ -6,7 +6,7 @@
 //   - 3 stars at >= 95% accuracy, 2 at >= 85%, otherwise 1.
 //
 // `accuracyPct` is a 0..100 number (or null/undefined when no attempts were
-// recorded — treated as 0).
+// recorded - treated as 0).
 export function starsFor({ written = 0, total = 0, accuracyPct = 0 } = {}) {
   if (total <= 0) return 0;
   if (written < total) return 0;

@@ -13,7 +13,7 @@ export const ALL_HARAKAT = [
   'dagger_alif','maddah_above','subscript_alef','inverted_damma'
 ];
 
-// Letters the user has to actually write by default — the ones they listed
+// Letters the user has to actually write by default - the ones they listed
 // (tha, haa, dal, zal, za, seen, sheen, suad, duad, tua, zua, ain, fa, qaf,
 // kaf, ha, waw). Everything else is auto-filled.
 export const DEFAULT_REQUIRED_LETTERS = [
@@ -47,7 +47,7 @@ function migrate(stored) {
     delete out.hintLevel;
   }
   // Old shape stored `optionalLetters` (letters to auto-fill). Migrate only
-  // if the user had actually customized — an empty list means they never
+  // if the user had actually customized - an empty list means they never
   // touched it, so let the new default kick in.
   if ('optionalLetters' in out) {
     const opt = out.optionalLetters || [];

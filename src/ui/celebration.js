@@ -82,7 +82,7 @@ export function mountCelebration(parent = document.body) {
     const name = surahName ? ` Surah ${surahName}` : ' this surah';
     if (shown >= 3)      lineEl.textContent = `Perfect!${name} complete - three stars!`;
     else if (shown === 2) lineEl.textContent = `Great job!${name} complete - two stars!`;
-    else                  lineEl.textContent = `${name.trim()} complete — keep practicing for more stars!`;
+    else                  lineEl.textContent = `${name.trim()} complete - keep practicing for more stars!`;
 
     // Retrigger the pop animation by toggling a class on each show.
     scrim.classList.remove('celebrate-scrim--in');

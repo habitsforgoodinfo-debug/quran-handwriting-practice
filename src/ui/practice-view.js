@@ -109,7 +109,7 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
     banner.style.display = '';
   }
   function showRangeEnd(buttons = []) {
-    showBanner('✓ surah complete — beautiful work', buttons);
+    showBanner('✓ surah complete - beautiful work', buttons);
   }
   function showPrompt(message, buttons = []) {
     showBanner(message, buttons);
@@ -125,7 +125,7 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
   function updateProgress() {
     if (!surahName) { progressStrip.update(null); return; }
     // Bare canvas (showTranslit:false) repurposes the strip as a plain
-    // position indicator — "<SurahName> · <ayah>" with no word counter.
+    // position indicator - "<SurahName> · <ayah>" with no word counter.
     if (!showTranslit) {
       progressStrip.update({ surahName, ayah, wordIdx: null, totalWords: null, meaning: null });
       return;

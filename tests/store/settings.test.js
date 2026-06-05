@@ -98,7 +98,7 @@ test('settings: legacy ALL_HARAKAT stored default migrates to [] (auto-fill on)'
 
 test('settings: partial harakat selection is preserved and not migrated', async () => {
   const db = makeMockDb();
-  // A user who deliberately chose only fatha and kasra — must not be wiped.
+  // A user who deliberately chose only fatha and kasra - must not be wiped.
   db.map.set('settings', { requiredHarakat: ['fatha', 'kasra'] });
   const s = await getSettings(db);
   assert.deepEqual(s.requiredHarakat, ['fatha', 'kasra']);

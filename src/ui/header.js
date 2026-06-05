@@ -41,7 +41,7 @@ export function mountHeader(root, {
 
   const rapidBtn = document.createElement('button');
   rapidBtn.className = 'rapid-fire'; rapidBtn.textContent = '📝';
-  rapidBtn.title = 'Pop quiz — listen & write a verse you previously struggled with';
+  rapidBtn.title = 'Pop quiz - listen & write a verse you previously struggled with';
   rapidBtn.addEventListener('click', () => onOpenRapidFire && onOpenRapidFire());
 
   const settingsBtn = document.createElement('button');
@@ -111,7 +111,7 @@ export function mountHeader(root, {
         continue;
       }
       const pct = Math.round((e.hits / e.attempts) * 100);
-      opt.textContent = `${base} — ${pct}%`;
+      opt.textContent = `${base} - ${pct}%`;
       opt.classList.toggle('surah-opt--low', pct < 50);
     }
   }

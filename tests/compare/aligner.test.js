@@ -29,7 +29,7 @@ test('aligner: wrong harakah is flagged', () => {
   assert.equal(result[0].diacriticMatch, 'wrong');
 });
 
-test('aligner: silent letter is autofilled — never wrong', () => {
+test('aligner: silent letter is autofilled - never wrong', () => {
   const expected = parseWord('كَل');
   const recognized = { letters: [{ matchedLetter: 'ك', confidence: 0.9, unclear: false }], diacritics: ['fatha'] };
   const { result, extras } = align(expected, recognized);

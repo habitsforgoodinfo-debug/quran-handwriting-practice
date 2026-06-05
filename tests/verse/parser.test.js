@@ -17,7 +17,7 @@ test('parseWord: bare letter has no diacritic and is silent', () => {
   assert.equal(w[0].isMaddAlif, false);
 });
 
-test('parseWord: قَال — alif after fatha is madd, lam is silent', () => {
+test('parseWord: قَال - alif after fatha is madd, lam is silent', () => {
   const w = parseWord('قَال');
   assert.equal(w.length, 3);
   assert.equal(w[0].letter, 'ق');
@@ -31,7 +31,7 @@ test('parseWord: قَال — alif after fatha is madd, lam is silent', () => {
   assert.equal(w[2].isMaddAlif, false);
 });
 
-test('parseWord: قُال — alif after damma is NOT madd and is silent', () => {
+test('parseWord: قُال - alif after damma is NOT madd and is silent', () => {
   const w = parseWord('قُال');
   assert.equal(w.length, 3);
   assert.deepEqual(w[0].diacritics, ['damma']);

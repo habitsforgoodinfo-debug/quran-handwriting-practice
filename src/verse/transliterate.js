@@ -1,5 +1,5 @@
 // Generates a Latin transliteration for any Quran word from its parsed
-// glyph list. The output is intentionally simple/standard — perfect
+// glyph list. The output is intentionally simple/standard - perfect
 // Quranic transliteration (with ʾiʿrāb endings, idafa, waqf forms, etc.)
 // is out of scope. This covers ~90% of cases well enough that a learner
 // can read along.

@@ -88,7 +88,7 @@ async function init() {
     showTranslit: false
   });
 
-  // Rolling strip starts empty every session — it shows only the verses
+  // Rolling strip starts empty every session - it shows only the verses
   // the user writes during the current sitting.
   rollingApi = mountRollingStrip(rollingEl);
 
@@ -202,7 +202,7 @@ function refreshHints() {
     keypadApi.setHint(hint);
     return;
   }
-  // policy === 'auto' — show hint only after 2 wrong attempts on current slot
+  // policy === 'auto' - show hint only after 2 wrong attempts on current slot
   const rc = m.state.rejectCount;
   if (rc < 2) {
     keypadApi.setHint({});
@@ -386,7 +386,7 @@ async function handleVerseComplete({ surah, ayah, rawText, perfect }) {
 function promptBatchRetry() {
   const n = batchState.mistakes.length;
   practiceApi.showPrompt(
-    `Quick check — you slipped on ${n} of the last ${BATCH_SIZE} verses. Want to retry them now?`,
+    `Quick check - you slipped on ${n} of the last ${BATCH_SIZE} verses. Want to retry them now?`,
     [
       { label: `Retry ${n} verses`, cls: 'primary',  onClick: startRetry },
       { label: 'Skip',               cls: 'secondary', onClick: skipRetry }

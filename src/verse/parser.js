@@ -14,10 +14,10 @@ const DIACRITIC_MAP = {
   'ٓ': 'maddah_above',      // U+0653
   'ٔ': 'hamza_above',       // U+0654
   'ٕ': 'hamza_below',       // U+0655
-  'ٖ': 'subscript_alef',    // U+0656 — Indo-Pak long-kasra
-  'ٗ': 'inverted_damma',    // U+0657 — Indo-Pak long-damma
+  'ٖ': 'subscript_alef',    // U+0656 - Indo-Pak long-kasra
+  'ٗ': 'inverted_damma',    // U+0657 - Indo-Pak long-damma
   '٘': 'mark_0658',         // U+0658 (Indo-Pak noon ghunna marker)
-  'ٚ': 'small_v_above',     // U+065A — Indo-Pak imala marker
+  'ٚ': 'small_v_above',     // U+065A - Indo-Pak imala marker
   'ٜ': 'mark_065C',         // U+065C
   // Small high marks U+0610..U+061A (Tarteel data uses U+0614, U+0615, U+0617)
   'ؔ': 'small_high_tah_v2', // U+0614
@@ -33,7 +33,7 @@ const DIACRITIC_MAP = {
   'ۛ': 'high_three_dots',                       // U+06DB
   'ۜ': 'high_seen',                             // U+06DC
   '۞': 'rub_el_hizb',                           // U+06DE (not strictly combining but encountered)
-  '۟': 'small_high_rounded_zero',               // U+06DF — Indo-Pak silent-letter marker
+  '۟': 'small_high_rounded_zero',               // U+06DF - Indo-Pak silent-letter marker
   '۠': 'high_upright_rectangular_zero',         // U+06E0
   'ۡ': 'high_dotless_head_of_khah',             // U+06E1 (Indo-Pak sukun substitute)
   'ۢ': 'high_meem_isolated',                    // U+06E2
@@ -71,7 +71,7 @@ function isCombiningMark(ch) {
 }
 
 // Zero-width / bidi formatting characters that must be stripped before
-// parsing — otherwise they appear as phantom base letters that the user
+// parsing - otherwise they appear as phantom base letters that the user
 // can never type, blocking verse completion. Indo-Pak data appends U+200F
 // (right-to-left mark) at the end of every verse.
 const FORMATTING_RE = /[​-‏‪-‮⁦-⁩﻿]/g;
@@ -80,7 +80,7 @@ const FORMATTING_RE = /[​-‏‪-‮⁦-⁩﻿]/g;
 // part of the Quranic text and must be dropped before parsing.
 const PUA_RE = /[-]/g;
 // U+0640 (ـ kashida / tatweel) is a typographic stretch char used to
-// extend a letter visually — never an input from the user.
+// extend a letter visually - never an input from the user.
 const KASHIDA_RE = /ـ/g;
 function stripFormatting(s) {
   return s.replace(FORMATTING_RE, '').replace(PUA_RE, '').replace(KASHIDA_RE, '');
@@ -91,7 +91,7 @@ function stripFormatting(s) {
 //   - Private-use-area glyphs (font-specific verse-number ornaments that
 //     render as tofu in most system fonts)
 //   - Quranic small-high annotations like U+06D6..U+06ED (silent-letter
-//     markers, waqf signs, etc.) — useful while parsing, but visually
+//     markers, waqf signs, etc.) - useful while parsing, but visually
 //     noisy as tiny boxes when reading the verse back.
 const DISPLAY_STRIP_RE = /[ۖ-ۭ-]/g;
 export function cleanVerseForDisplay(s) {
@@ -105,7 +105,7 @@ export function parseWord(word) {
   let i = 0;
   while (i < codepoints.length) {
     const ch = codepoints[i];
-    if (isCombiningMark(ch)) { i++; continue; } // stray mark with no base — skip
+    if (isCombiningMark(ch)) { i++; continue; } // stray mark with no base - skip
     const glyph = { letter: ch, diacritics: [], isSilent: true, isMaddAlif: false };
     i++;
     while (i < codepoints.length && isCombiningMark(codepoints[i])) {
