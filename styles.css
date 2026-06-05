@@ -309,3 +309,268 @@ html, body {
 .toast { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #ff4b4b; color: white; padding: 10px 16px; border-radius: 8px; z-index: 200; display: flex; align-items: center; gap: 8px; }
 .toast button.toast-retry   { background: white; color: #ff4b4b; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; }
 .toast button.toast-dismiss { background: transparent; color: white; border: none; font-size: 18px; cursor: pointer; padding: 0 4px; }
+
+/* ============================================================
+   Phase B: card stack + welcome + surah grid + drawer
+   ============================================================ */
+
+/* --- Card stack (navigator.js class contract) --- */
+#cards { position: relative; height: 100dvh; overflow: hidden; }
+.card {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  transform: translateX(100%);
+  transition: transform 260ms ease;
+  will-change: transform;
+  background: #fffaf2;
+  overflow-y: auto;
+}
+.card--active { transform: translateX(0); }
+.card--left   { transform: translateX(-100%); }
+
+/* --- Welcome screen --- */
+.welcome {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 24px;
+  flex: 1;
+  padding: 24px 16px 32px;
+  min-height: 100%;
+}
+
+.welcome__heading {
+  font-size: 18px;
+  color: #5b5346;
+  text-align: center;
+  margin: 0;
+  font-weight: 600;
+}
+
+.welcome__tiles {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  width: 100%;
+  max-width: 440px;
+}
+
+.welcome__tile {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 4px;
+  padding: 20px 22px;
+  background: #fffaf2;
+  border: 1.5px solid #d8cdb8;
+  border-radius: 14px;
+  cursor: pointer;
+  text-align: left;
+  transition: background 120ms ease, border-color 120ms ease;
+  width: 100%;
+}
+.welcome__tile:hover  { background: #f6f1e6; border-color: #bfb49e; }
+.welcome__tile:active { background: #ede6d6; }
+
+.welcome__tile-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #1c1c1c;
+}
+.welcome__tile-sub {
+  font-size: 13px;
+  color: #5b5346;
+}
+
+.welcome__resume {
+  background: none;
+  border: none;
+  color: #58cc02;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.welcome__resume:hover { color: #4ab300; }
+
+/* --- Surah grid screen --- */
+.surah-grid__header {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 12px 14px 8px;
+  border-bottom: 1px solid #d8cdb8;
+  flex-shrink: 0;
+}
+
+.surah-grid__back {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #5b5346;
+  padding: 4px 8px;
+  border-radius: 6px;
+  line-height: 1;
+}
+.surah-grid__back:hover { background: #f0e8d8; }
+
+.surah-grid__heading {
+  font-size: 17px;
+  color: #1c1c1c;
+  margin: 0;
+  font-weight: 700;
+}
+
+.surah-grid__grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  padding: 12px;
+  overflow-y: auto;
+  flex: 1;
+}
+
+.surah-tile {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: 10px 8px;
+  background: #fffaf2;
+  border: 1px solid #d8cdb8;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background 120ms ease, border-color 120ms ease;
+  position: relative;
+}
+.surah-tile:hover  { background: #f6f1e6; border-color: #bfb49e; }
+.surah-tile:active { background: #ede6d6; }
+
+.surah-tile--low {
+  border-color: #c41a1a;
+  background: #fff5f5;
+}
+.surah-tile--low:hover { background: #ffe8e8; }
+
+.surah-tile--open { border-color: #58cc02; }
+
+.surah-tile__num {
+  font-size: 10px;
+  color: #8a6300;
+  font-weight: 600;
+}
+.surah-tile__ar {
+  font-family: 'Amiri', 'NotoNaskhArabic', serif;
+  font-size: 15px;
+  color: #1c1c1c;
+  direction: rtl;
+  line-height: 1.4;
+}
+.surah-tile__en {
+  font-size: 11px;
+  color: #5b5346;
+  line-height: 1.3;
+}
+.surah-tile__stats {
+  font-size: 10px;
+  color: #8a6300;
+  margin-top: 2px;
+}
+.surah-tile--low .surah-tile__stats { color: #c41a1a; }
+
+/* Inline start-over / continue choice */
+.surah-tile__choice {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px dashed #d8cdb8;
+}
+.surah-tile__choice-btn {
+  padding: 6px 8px;
+  border-radius: 7px;
+  border: 1px solid transparent;
+  font-size: 11px;
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+}
+.surah-tile__choice-btn--start {
+  background: #f6f1e6;
+  color: #5b5346;
+  border-color: #d8cdb8;
+}
+.surah-tile__choice-btn--start:hover { background: #ede6d6; }
+.surah-tile__choice-btn--continue {
+  background: #58cc02;
+  color: white;
+  border-color: #4ab300;
+}
+.surah-tile__choice-btn--continue:hover { background: #4ab300; }
+
+/* --- Drawer --- */
+.drawer__hamburger {
+  position: absolute;
+  top: 12px;
+  right: 12px;
+  z-index: 50;
+  background: #fffaf2;
+  border: 1px solid #d8cdb8;
+  border-radius: 8px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 18px;
+  line-height: 1;
+  color: #5b5346;
+}
+.drawer__hamburger:hover { background: #f0e8d8; }
+
+.drawer__scrim {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.35);
+  z-index: 60;
+}
+.drawer__scrim--open { display: block; }
+
+.drawer__panel {
+  position: fixed;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: min(280px, 80vw);
+  background: #fffaf2;
+  border-left: 1px solid #d8cdb8;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 20px 16px;
+  z-index: 70;
+  transform: translateX(100%);
+  transition: transform 240ms ease;
+}
+.drawer__panel--open { transform: translateX(0); }
+
+.drawer__item {
+  background: none;
+  border: none;
+  text-align: left;
+  font-size: 16px;
+  font-weight: 600;
+  color: #1c1c1c;
+  padding: 14px 12px;
+  border-radius: 10px;
+  cursor: pointer;
+  width: 100%;
+}
+.drawer__item:hover { background: #f0e8d8; }
+
+/* Keypad actions 2-column layout (used in Phase C when audio key hidden) */
+.keypad-actions--2 { grid-template-columns: 1fr 1fr; }
