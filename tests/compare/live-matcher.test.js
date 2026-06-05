@@ -80,6 +80,37 @@ test('matcher: strict mode disables tolerance', () => {
   assert.equal(m.tryLetter('ت').accepted, false);
 });
 
+// Hamza family tolerance: keypad only offers ء; ئ and ؤ are positional carriers
+test('matcher: tolerance accepts ء for expected ئ', () => {
+  const m = new LiveMatcher(buildSkeleton('ئ'), { strict: false });
+  assert.equal(m.tryLetter('ء').accepted, true);
+});
+
+test('matcher: tolerance accepts ء for expected ؤ', () => {
+  const m = new LiveMatcher(buildSkeleton('ؤ'), { strict: false });
+  assert.equal(m.tryLetter('ء').accepted, true);
+});
+
+test('matcher: tolerance accepts ئ for expected ء (symmetric)', () => {
+  const m = new LiveMatcher(buildSkeleton('ء'), { strict: false });
+  assert.equal(m.tryLetter('ئ').accepted, true);
+});
+
+test('matcher: tolerance accepts ؤ for expected ء (symmetric)', () => {
+  const m = new LiveMatcher(buildSkeleton('ء'), { strict: false });
+  assert.equal(m.tryLetter('ؤ').accepted, true);
+});
+
+test('matcher: strict mode rejects ء for expected ئ', () => {
+  const m = new LiveMatcher(buildSkeleton('ئ'), { strict: true });
+  assert.equal(m.tryLetter('ء').accepted, false);
+});
+
+test('matcher: hamza class does not match unrelated letter', () => {
+  const m = new LiveMatcher(buildSkeleton('ئ'), { strict: false });
+  assert.equal(m.tryLetter('ق').accepted, false);
+});
+
 test('matcher: backspace returns to letter-awaiting state', () => {
   const m = new LiveMatcher(buildSkeleton('قُلْ'));
   m.tryLetter('ق'); m.tryHarakat(HARAKAT.damma);
