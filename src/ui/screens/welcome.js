@@ -7,6 +7,14 @@ export function mountWelcome(rootEl, { onPickMode, onResume }) {
   const wrap = document.createElement('div');
   wrap.className = 'welcome';
 
+  const title = document.createElement('h1');
+  title.className = 'welcome__title';
+  title.textContent = 'Quran Practice';
+
+  const underline = document.createElement('span');
+  underline.className = 'welcome__underline';
+  underline.setAttribute('aria-hidden', 'true');
+
   const heading = document.createElement('p');
   heading.className = 'welcome__heading';
   heading.textContent = 'What would you like to practice today?';
@@ -19,23 +27,37 @@ export function mountWelcome(rootEl, { onPickMode, onResume }) {
       key: 'refresher',
       title: 'Hifz refresher',
       sub: 'Easy - homophone letters only',
+      emoji: '🌱',
+      tint: 'green',
     },
     {
       key: 'thorough',
       title: 'Hifz thorough',
       sub: 'Every letter',
+      emoji: '💪',
+      tint: 'sky',
     },
     {
       key: 'dictation',
       title: 'Dictation',
       sub: 'Write what you hear',
+      emoji: '🎧',
+      tint: 'amber',
     },
   ];
 
   for (const m of MODES) {
     const tile = document.createElement('button');
-    tile.className = 'welcome__tile';
+    tile.className = `welcome__tile welcome__tile--${m.tint}`;
     tile.type = 'button';
+
+    const iconEl = document.createElement('span');
+    iconEl.className = 'welcome__tile-icon';
+    iconEl.setAttribute('aria-hidden', 'true');
+    iconEl.textContent = m.emoji;
+
+    const textWrap = document.createElement('span');
+    textWrap.className = 'welcome__tile-text';
 
     const titleEl = document.createElement('span');
     titleEl.className = 'welcome__tile-title';
@@ -45,7 +67,8 @@ export function mountWelcome(rootEl, { onPickMode, onResume }) {
     subEl.className = 'welcome__tile-sub';
     subEl.textContent = m.sub;
 
-    tile.append(titleEl, subEl);
+    textWrap.append(titleEl, subEl);
+    tile.append(iconEl, textWrap);
     tile.addEventListener('click', () => onPickMode(m.key));
     tiles.appendChild(tile);
   }
@@ -56,7 +79,11 @@ export function mountWelcome(rootEl, { onPickMode, onResume }) {
   resumeLink.style.display = 'none';
   resumeLink.addEventListener('click', () => onResume());
 
-  wrap.append(heading, tiles, resumeLink);
+  const titleWrap = document.createElement('div');
+  titleWrap.className = 'welcome__title-wrap';
+  titleWrap.append(title, underline);
+
+  wrap.append(titleWrap, heading, tiles, resumeLink);
   rootEl.appendChild(wrap);
 
   function setResume(labelOrNull) {
