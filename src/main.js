@@ -402,6 +402,13 @@ function promptBatchRetry() {
 // (surah-completion trigger), exitRetryFlow re-shows the surah-end banner.
 function startRetry(resumeTarget) {
   batchState.inRetryMode = true;
+  // Clear the rolling strip so the review session populates it from scratch.
+  // Set rollingStripSurah to null so jumpToVerse's surah-change guard won't
+  // double-clear when the first review verse lands.
+  if (rollingApi) {
+    rollingApi.clear();
+    rollingStripSurah = null;
+  }
   // Review queue runs ascending by (surah, ayah).
   batchState.retryQueue = sortQueue(batchState.mistakes);
   batchState.total = batchState.retryQueue.length;
