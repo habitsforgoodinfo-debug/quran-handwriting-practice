@@ -49,6 +49,9 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
   let reviewMode = false;
   let requiredLetters = null;
   let requiredHarakat = null;
+  // Optional { attempted, total } marker for the dictated review test. When
+  // set, the position strip renders an amber "Review N of M" segment.
+  let reviewProgress = null;
 
   function loadCurrentVerse() {
     words = parseVerse(rawText);
@@ -62,10 +65,11 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
   }
 
   function setVerse({ surah: s, surahName: sn, ayah: a, rawText: rt, slide = false,
-                       requiredLetters: rl, requiredHarakat: rh }) {
+                       requiredLetters: rl, requiredHarakat: rh, review: rv }) {
     surah = s; surahName = sn; ayah = a; rawText = rt;
     if (rl !== undefined) requiredLetters = rl;
     if (rh !== undefined) requiredHarakat = rh;
+    if (rv !== undefined) reviewProgress = rv;
     banner.style.display = 'none';
     banner.innerHTML = '';
     if (!rawText) {
@@ -127,14 +131,15 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
     // Bare canvas (showTranslit:false) repurposes the strip as a plain
     // position indicator - "<SurahName> · <ayah>" with no word counter.
     if (!showTranslit) {
-      progressStrip.update({ surahName, ayah, wordIdx: null, totalWords: null, meaning: null });
+      progressStrip.update({ surahName, ayah, wordIdx: null, totalWords: null, meaning: null, review: reviewProgress });
       return;
     }
     progressStrip.update({
       surahName, ayah,
       wordIdx: getCurrentWordIdx(),
       totalWords: getTotalWords(),
-      meaning: null
+      meaning: null,
+      review: reviewProgress
     });
   }
 
@@ -252,6 +257,12 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
     hasInProgressInput,
     showRangeEnd, showPrompt,
     showReview, exitReview,
+    // Set/clear the dictated-review progress marker (amber pill). Pass
+    // { attempted, total } to show; null to hide. Repaints the strip.
+    setReviewProgress(rv) {
+      reviewProgress = rv || null;
+      updateProgress();
+    },
     isReviewing: () => reviewMode,
     refreshHeatmap: () => updateProgress(),
     getMatcher: () => matcher,

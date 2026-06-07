@@ -190,6 +190,16 @@ html, body {
 }
 .progress-pos   { font-weight: 800; color: var(--c-ink); }
 .progress-meaning { color: var(--c-ink-soft); font-size: 12px; }
+/* Amber review-progress pill segment, shown only during the review test. */
+.progress-review {
+  font-weight: 800;
+  font-size: 12px;
+  color: var(--c-amber-deep);
+  background: var(--c-amber-tint);
+  border: 1px solid #ecd58c;
+  border-radius: 999px;
+  padding: 1px 8px;
+}
 /* Collapse the pill chrome when there is no position text (banner state). */
 .progress-strip:has(.progress-pos:empty) {
   background: none; border-color: transparent; padding: 4px 2px;

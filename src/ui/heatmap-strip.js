@@ -1,24 +1,46 @@
 // Progress + meaning strip. Sits between the user pane and the keypad.
 // API kept stable (mountHeatmapStrip + update) for legacy callers/tests.
 
+// "Review N of M" pill text. Kept as a named helper so the format lives in
+// one place (mirrors src/review/queue.js reviewLabel, which adds position).
+function reviewPillText(review) {
+  return `Review ${review.attempted} of ${review.total}`;
+}
+
 export function mountHeatmapStrip(root) {
   root.innerHTML = '';
   root.className = (root.className || '') + ' progress-strip';
 
+  // Review marker (amber pill) - rendered before the position text when the
+  // payload carries a `review` field. Hidden otherwise.
+  const reviewEl = document.createElement('span');
+  reviewEl.className = 'progress-review';
+  reviewEl.style.display = 'none';
   const posEl = document.createElement('span');
   posEl.className = 'progress-pos';
   const meaningEl = document.createElement('span');
   meaningEl.className = 'progress-meaning';
 
-  root.append(posEl, meaningEl);
+  root.append(reviewEl, posEl, meaningEl);
 
   function update(payload) {
     if (!payload || typeof payload !== 'object' || Array.isArray(payload)) {
+      reviewEl.style.display = 'none';
+      reviewEl.textContent = '';
       posEl.textContent = '';
       meaningEl.innerHTML = '';
       return;
     }
-    const { surahName, ayah, wordIdx, totalWords, meaning } = payload;
+    const { surahName, ayah, wordIdx, totalWords, meaning, review } = payload;
+    // Review marker is independent of the position text - render it whenever
+    // present so the amber pill stays visible across the review queue.
+    if (review && review.total > 0) {
+      reviewEl.textContent = reviewPillText(review);
+      reviewEl.style.display = '';
+    } else {
+      reviewEl.style.display = 'none';
+      reviewEl.textContent = '';
+    }
     if (!surahName) {
       posEl.textContent = '';
       meaningEl.innerHTML = '';
