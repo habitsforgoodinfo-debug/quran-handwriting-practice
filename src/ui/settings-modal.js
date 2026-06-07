@@ -134,6 +134,18 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
     onChange({ requiredHarakat: autoHarakat.checked ? [] : ALL_HARAKAT_NAMES });
   });
 
+  // ---- Test madd ----
+  const labRequireMadd = document.createElement('label');
+  labRequireMadd.append('Test madd (require typing the madd sign) ');
+  const requireMadd = document.createElement('input');
+  requireMadd.type = 'checkbox';
+  requireMadd.className = 'require-madd';
+  requireMadd.checked = !!settings.requireMadd;
+  labRequireMadd.appendChild(requireMadd);
+  requireMadd.addEventListener('change', () => {
+    onChange({ requireMadd: requireMadd.checked });
+  });
+
   const resetBtn = document.createElement('button');
   resetBtn.className = 'reset-stats';
   resetBtn.textContent = 'Reset stats';
@@ -145,7 +157,7 @@ export function mountSettingsModal(root, { settings, onChange, onResetStats, onC
   panel.append(
     h, labReciter, labHint, labAutoPlay, labSilent, labWidth,
     labQuickTest,
-    lettersBlock, labAutoHarakat,
+    lettersBlock, labAutoHarakat, labRequireMadd,
     resetBtn, closeBtn
   );
   modal.appendChild(panel);

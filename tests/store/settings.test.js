@@ -103,3 +103,9 @@ test('settings: partial harakat selection is preserved and not migrated', async 
   const s = await getSettings(db);
   assert.deepEqual(s.requiredHarakat, ['fatha', 'kasra']);
 });
+
+test('settings: default requireMadd is false', async () => {
+  const db = makeMockDb();
+  const s = await getSettings(db);
+  assert.equal(s.requireMadd, false);
+});

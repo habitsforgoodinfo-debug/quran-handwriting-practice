@@ -10,7 +10,7 @@ import { mountSurahGrid } from './ui/screens/surah-grid.js';
 import { mountDrawer } from './ui/drawer.js';
 import { mountCelebration } from './ui/celebration.js';
 import { starsFor } from './stats/stars.js';
-import { resolveModeConfig, MODE_PRESETS } from './modes/presets.js';
+import { resolveModeConfig, withMadd, MODE_PRESETS } from './modes/presets.js';
 import { getLastPosition, setLastPosition } from './store/session.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
@@ -21,6 +21,7 @@ import {
 } from './store/stats.js';
 import { AyahPlayer, buildAyahUrl } from './audio/player.js';
 import { chimeComplete } from './ui/feedback.js';
+import { sortQueue } from './review/queue.js';
 
 const state = {
   surah: 1, ayah: 1, surahMax: 7, surahName: 'Al-Fatiha',
@@ -351,6 +352,8 @@ const batchState = {
   mistakes: [],            // [{ surah, ayah, rawText }]
   inRetryMode: false,
   retryQueue: [],
+  total: 0,                // queue length when the review test started
+  attempted: 0,            // how many review verses the user has landed on
   resumeSurah: null,
   resumeAyah: null
 };
@@ -389,23 +392,28 @@ function promptBatchRetry() {
   practiceApi.showPrompt(
     `Quick check - you slipped on ${n} of the last ${BATCH_SIZE} verses. Want to retry them now?`,
     [
-      { label: `Retry ${n} verses`, cls: 'primary',  onClick: startRetry },
+      { label: `Retry ${n} verses`, cls: 'primary',  onClick: () => startRetry() },
       { label: 'Skip',               cls: 'secondary', onClick: skipRetry }
     ]
   );
 }
 
-function startRetry() {
+// resumeTarget: where to land once the review queue is exhausted. When null
+// (surah-completion trigger), exitRetryFlow re-shows the surah-end banner.
+function startRetry(resumeTarget) {
   batchState.inRetryMode = true;
-  batchState.retryQueue = [...batchState.mistakes];
-  // Remember where to resume after retries are done.
-  const nextAyah = state.ayah + 1;
-  if (nextAyah > state.surahMax) {
-    batchState.resumeSurah = state.surah;
-    batchState.resumeAyah  = state.surahMax; // surah will surface its end banner
+  // Review queue runs ascending by (surah, ayah).
+  batchState.retryQueue = sortQueue(batchState.mistakes);
+  batchState.total = batchState.retryQueue.length;
+  batchState.attempted = 0;
+  if (resumeTarget !== undefined) {
+    batchState.resumeSurah = resumeTarget ? resumeTarget.surah : null;
+    batchState.resumeAyah  = resumeTarget ? resumeTarget.ayah : null;
   } else {
+    // every-20 trigger: resume at the verse after the current one.
+    const nextAyah = state.ayah + 1;
     batchState.resumeSurah = state.surah;
-    batchState.resumeAyah  = nextAyah;
+    batchState.resumeAyah  = nextAyah > state.surahMax ? state.surahMax : nextAyah;
   }
   loadNextRetry();
 }
@@ -413,7 +421,12 @@ function startRetry() {
 function loadNextRetry() {
   const next = batchState.retryQueue.shift();
   if (!next) { exitRetryFlow(); return; }
-  jumpToVerse(next.surah, next.ayah);
+  // Mark progress as the user lands on (attempts) each review verse.
+  batchState.attempted++;
+  jumpToVerse(next.surah, next.ayah, true, {
+    attempted: batchState.attempted,
+    total: batchState.total
+  });
 }
 
 function advanceRetryQueue() {
@@ -431,18 +444,30 @@ function skipRetry() {
 }
 
 function exitRetryFlow() {
+  const hadResume = batchState.resumeSurah != null;
+  const s = batchState.resumeSurah, a = batchState.resumeAyah;
   batchState.inRetryMode = false;
   batchState.retryQueue = [];
   batchState.count = 0;
   batchState.mistakes = [];
-  if (batchState.resumeSurah != null) {
-    const s = batchState.resumeSurah, a = batchState.resumeAyah;
-    batchState.resumeSurah = batchState.resumeAyah = null;
+  batchState.total = 0;
+  batchState.attempted = 0;
+  batchState.resumeSurah = batchState.resumeAyah = null;
+  // Clear the amber review marker now that the test is over.
+  practiceApi.setReviewProgress(null);
+  if (hadResume) {
     jumpToVerse(s, a);
+  } else {
+    // Leaving review with no resume: revert the replay button to the mode
+    // rule before the banner takes over the canvas.
+    practiceApi.setReplay(state.matcherConfig?.isDictation ? playCurrentAyah : null);
+    // Surah-completion trigger: review ran from the end banner, so put the
+    // surah-end banner back so the user keeps their banner choices.
+    showRangeEndBanner();
   }
 }
 
-function jumpToVerse(surah, ayah, slide = true) {
+function jumpToVerse(surah, ayah, slide = true, review = null) {
   const meta = getSurah(surah);
   state.surah = surah;
   state.ayah  = ayah;
@@ -452,7 +477,9 @@ function jumpToVerse(surah, ayah, slide = true) {
     rollingApi.clear();
     rollingStripSurah = surah;
   }
-  loadCurrentVerse({ slide, autoPlay: state.matcherConfig?.isDictation });
+  // Audio: review verses auto-play (dictation), or whatever the mode dictates.
+  const autoPlay = review != null || state.matcherConfig?.isDictation;
+  loadCurrentVerse({ slide, autoPlay, review });
 }
 
 function advanceToNextAyah({ slide = true } = {}) {
@@ -461,12 +488,35 @@ function advanceToNextAyah({ slide = true } = {}) {
     const finishedSurah = state.surah;
     const finishedName = state.surahName;
     showRangeEndBanner();
-    // Celebrate over the banner once the surah's stars are known.
-    celebrateSurah(finishedSurah, finishedName).catch(() => {});
+    // Celebrate over the banner once the surah's stars are known, then offer
+    // the dictated review test for any un-retried mistakes.
+    celebrateSurah(finishedSurah, finishedName, maybePromptSurahReview)
+      .catch(() => maybePromptSurahReview());
     return;
   }
   state.ayah = nextAyah;
   loadCurrentVerse({ slide: true, autoPlay: state.matcherConfig?.isDictation });
+}
+
+// On surah completion (after celebration dismiss), if mistakes accumulated
+// since the last review, prompt the dictated review test above the surah-end
+// banner. Declining ("Skip") leaves the banner choices intact.
+function maybePromptSurahReview() {
+  if (batchState.inRetryMode) return;
+  if (!batchState.mistakes || batchState.mistakes.length === 0) return;
+  const n = batchState.mistakes.length;
+  practiceApi.showPrompt(
+    `Before you go - want a quick dictated review of the ${n} verse${n === 1 ? '' : 's'} you slipped on?`,
+    [
+      { label: `Review ${n} verse${n === 1 ? '' : 's'}`, cls: 'primary',
+        onClick: () => startRetry(null) },
+      { label: 'Skip', cls: 'secondary', onClick: () => {
+        batchState.count = 0;
+        batchState.mistakes = [];
+        showRangeEndBanner();
+      } }
+    ]
+  );
 }
 
 function showRangeEndBanner() {
@@ -481,8 +531,9 @@ function showRangeEndBanner() {
 // Compute stars for a just-finished surah from stored stats and pop the
 // celebration overlay above the banner. Only celebrates when the surah is
 // actually fully written (starsFor returns >= 1).
-async function celebrateSurah(surah, surahName) {
-  if (!celebrationApi) return;
+async function celebrateSurah(surah, surahName, onDismiss) {
+  const done = onDismiss || (() => {});
+  if (!celebrationApi) { done(); return; }
   const [accMap, progressBySurah] = await Promise.all([
     getAllSurahAccuracy(),
     buildProgressBySurah()
@@ -496,8 +547,9 @@ async function celebrateSurah(surah, surahName) {
     ? Math.round((acc.hits / acc.attempts) * 100)
     : 0;
   const stars = starsFor({ written, total, accuracyPct: pct });
-  if (stars <= 0) return;
-  celebrationApi.show({ surahName, stars });
+  // No stars earned - skip the overlay but still run the post-step (review).
+  if (stars <= 0) { done(); return; }
+  celebrationApi.show({ surahName, stars, onDismiss: done });
 }
 
 function loadCurrentSurahFromStart() {
@@ -505,15 +557,18 @@ function loadCurrentSurahFromStart() {
   loadCurrentVerse({ slide: true, autoPlay: state.matcherConfig?.isDictation });
 }
 
-function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
+function loadCurrentVerse({ slide = false, autoPlay = false, review = undefined } = {}) {
   const rawText = getVerse(state.surah, state.ayah);
   // Mode overlay takes precedence; null overlay falls back to settings.
   const requiredLetters = state.matcherConfig
     ? state.matcherConfig.requiredLetters
     : (state.settings.requiredLetters || null);
-  const requiredHarakat = state.matcherConfig
+  const baseHarakat = state.matcherConfig
     ? state.matcherConfig.requiredHarakat
     : (state.settings.requiredHarakat || null);
+  // requireMadd is additive: forces maddah_above into the required set even
+  // when other harakat are auto-filled. Applied at this single choke point.
+  const requiredHarakat = withMadd(baseHarakat, state.settings.requireMadd);
   practiceApi.setVerse({
     surah: state.surah,
     surahName: state.surahName,
@@ -521,12 +576,15 @@ function loadCurrentVerse({ slide = false, autoPlay = false } = {}) {
     rawText,
     slide,
     requiredLetters,
-    requiredHarakat
+    requiredHarakat,
+    // undefined leaves the existing marker untouched; null/object sets it.
+    review
   });
   refreshHints();
-  // Show replay button only in dictation mode.
+  // Show replay button in dictation mode OR while the dictated review test is
+  // running, so the user can re-listen. Reverts to the mode rule afterwards.
   practiceApi.setReplay(
-    state.matcherConfig?.isDictation ? playCurrentAyah : null
+    (state.matcherConfig?.isDictation || batchState.inRetryMode) ? playCurrentAyah : null
   );
   // Single choke point for persisting where the user is.
   setLastPosition({ surah: state.surah, ayah: state.ayah, mode: state.mode })
@@ -545,6 +603,11 @@ function openSettings() {
       // for the rest of the session.
       if ('requiredLetters' in patch || 'requiredHarakat' in patch) {
         state.matcherConfig = null;
+        loadCurrentVerse();
+      } else if ('requireMadd' in patch) {
+        // requireMadd is additive - it does NOT override the mode overlay,
+        // it only injects maddah_above on top. Reload so the new verse gets
+        // the updated requiredHarakat without clearing the mode.
         loadCurrentVerse();
       }
       refreshHints();

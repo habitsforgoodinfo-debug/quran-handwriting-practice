@@ -36,7 +36,10 @@ export const DEFAULT_SETTINGS = Object.freeze({
   // Previously this was ALL_HARAKAT (all required), which made the
   // "Auto-fill all harakat" checkbox start unchecked - the wrong default.
   requiredHarakat: [],
-  quickTestEvery20: true
+  quickTestEvery20: true,
+  // When true, 'maddah_above' is always required even when other harakat are
+  // auto-filled. Lets the user specifically practice the madd elongation sign.
+  requireMadd: false
 });
 
 function migrate(stored) {

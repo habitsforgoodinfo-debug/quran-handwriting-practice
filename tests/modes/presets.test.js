@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { MODE_PRESETS, resolveModeConfig } from '../../src/modes/presets.js';
+import { MODE_PRESETS, resolveModeConfig, withMadd } from '../../src/modes/presets.js';
 import { DEFAULT_REQUIRED_LETTERS } from '../../src/store/settings.js';
 
 test('presets: refresher uses DEFAULT_REQUIRED_LETTERS, no harakat, not dictation', () => {
@@ -56,4 +56,36 @@ test('presets: mutating returned requiredHarakat does not affect preset or next 
   const cfg2 = resolveModeConfig('refresher', {});
   assert.deepEqual(cfg2.requiredHarakat, [],
     'second resolveModeConfig call should return original requiredHarakat');
+});
+
+// --- withMadd helper ---
+
+test('withMadd: null stays null (all-required mode, madd is already required)', () => {
+  assert.equal(withMadd(null, true), null);
+});
+
+test('withMadd: false flag is a no-op regardless of base value', () => {
+  assert.equal(withMadd(null, false), null);
+  assert.deepEqual(withMadd([], false), []);
+  assert.deepEqual(withMadd(['fatha'], false), ['fatha']);
+});
+
+test('withMadd: empty array + true adds maddah_above', () => {
+  assert.deepEqual(withMadd([], true), ['maddah_above']);
+});
+
+test('withMadd: existing list + true appends maddah_above', () => {
+  const result = withMadd(['fatha', 'kasra'], true);
+  assert.deepEqual(result, ['fatha', 'kasra', 'maddah_above']);
+});
+
+test('withMadd: maddah_above already present - no duplicate added', () => {
+  const result = withMadd(['maddah_above', 'fatha'], true);
+  assert.deepEqual(result, ['maddah_above', 'fatha']);
+});
+
+test('withMadd: does not mutate the input array', () => {
+  const base = ['fatha'];
+  withMadd(base, true);
+  assert.deepEqual(base, ['fatha']);
 });
