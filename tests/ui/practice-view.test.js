@@ -56,3 +56,22 @@ test('practice-view: showRangeEnd renders banner with provided buttons', () => {
   btn.dispatch('click');
   assert.equal(clicked, 1);
 });
+
+test('practice-view: typing hint is visible on blank canvas after setVerse', () => {
+  const { root, api } = setup();
+  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قُلْ' });
+  const hint = root.querySelector('.user-pane__hint');
+  assert.ok(hint, 'hint element should exist');
+  assert.notEqual(hint.style.display, 'none', 'hint should be visible when pane is empty');
+});
+
+test('practice-view: typing hint disappears after a letter is accepted', () => {
+  const { root, api } = setup();
+  api.setVerse({ surah: 1, surahName: 'Test', ayah: 1, rawText: 'قُلْ' });
+  const m = api.getMatcher();
+  const r = m.tryLetter('ق');
+  api.applyKeyResult(r);
+  const hint = root.querySelector('.user-pane__hint');
+  assert.ok(hint, 'hint element should still be in DOM');
+  assert.equal(hint.style.display, 'none', 'hint should be hidden once content is present');
+});
