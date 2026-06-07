@@ -10,7 +10,7 @@ import { mountSurahGrid } from './ui/screens/surah-grid.js';
 import { mountDrawer } from './ui/drawer.js';
 import { mountCelebration } from './ui/celebration.js';
 import { starsFor } from './stats/stars.js';
-import { resolveModeConfig, MODE_PRESETS } from './modes/presets.js';
+import { resolveModeConfig, withMadd, MODE_PRESETS } from './modes/presets.js';
 import { getLastPosition, setLastPosition } from './store/session.js';
 import { getSettings, updateSettings } from './store/settings.js';
 import {
@@ -563,9 +563,12 @@ function loadCurrentVerse({ slide = false, autoPlay = false, review = undefined 
   const requiredLetters = state.matcherConfig
     ? state.matcherConfig.requiredLetters
     : (state.settings.requiredLetters || null);
-  const requiredHarakat = state.matcherConfig
+  const baseHarakat = state.matcherConfig
     ? state.matcherConfig.requiredHarakat
     : (state.settings.requiredHarakat || null);
+  // requireMadd is additive: forces maddah_above into the required set even
+  // when other harakat are auto-filled. Applied at this single choke point.
+  const requiredHarakat = withMadd(baseHarakat, state.settings.requireMadd);
   practiceApi.setVerse({
     surah: state.surah,
     surahName: state.surahName,
@@ -600,6 +603,11 @@ function openSettings() {
       // for the rest of the session.
       if ('requiredLetters' in patch || 'requiredHarakat' in patch) {
         state.matcherConfig = null;
+        loadCurrentVerse();
+      } else if ('requireMadd' in patch) {
+        // requireMadd is additive - it does NOT override the mode overlay,
+        // it only injects maddah_above on top. Reload so the new verse gets
+        // the updated requiredHarakat without clearing the mode.
         loadCurrentVerse();
       }
       refreshHints();
