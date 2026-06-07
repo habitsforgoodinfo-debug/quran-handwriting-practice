@@ -114,9 +114,27 @@ html, body {
   border-radius: 8px; border: 1px solid #eee2cf;
   transition: transform 220ms ease, opacity 220ms ease;
 }
+.user-pane { position: relative; }
 .user-pane.user-pane--sliding { transform: translateX(-30px); opacity: 0; }
 .user-glyph.silent { color: #9aa0a6; opacity: 0.7; }
 .user-glyph.auto { color: #2c8a02; opacity: 0.55; }
+
+/* Blank-canvas hint - centered inside .user-pane, disappears once typing starts. */
+.user-pane__hint {
+  position: absolute;
+  inset: 0;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
+  gap: 6px;
+  pointer-events: none;
+  direction: ltr; text-align: center;
+}
+.user-pane__hint span {
+  font-family: 'Nunito','Inter',system-ui,sans-serif;
+  font-size: 12px;
+  color: #c4b89a;
+  line-height: 1.4;
+}
 
 /* Rolling strip - a continuous mushaf-style running paragraph of the
    verses the user has written, between the canvas and the keypad. */

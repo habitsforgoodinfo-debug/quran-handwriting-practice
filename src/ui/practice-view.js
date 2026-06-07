@@ -17,6 +17,17 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
   const userPane = document.createElement('div');
   userPane.className = 'user-pane';
 
+  // Hint overlay: shown on a blank canvas, hidden as soon as any glyph appears.
+  const typingHint = document.createElement('div');
+  typingHint.className = 'user-pane__hint';
+  typingHint.setAttribute('aria-hidden', 'true');
+  const hintLine1 = document.createElement('span');
+  hintLine1.textContent = 'Start typing the letters on the keyboard to begin';
+  const hintLine2 = document.createElement('span');
+  hintLine2.textContent = 'Made a mistake? Follow the green glow on the keyboard';
+  typingHint.append(hintLine1, hintLine2);
+  userPane.appendChild(typingHint);
+
   // Progress + range-complete banner
   const progressRoot = document.createElement('div');
   const banner       = document.createElement('div'); banner.className = 'range-complete-banner';
@@ -177,6 +188,11 @@ export function mountPracticeView(root, { onVerseComplete, showTranslit = true }
       userPane.appendChild(s);
       lastUserEl = s;
     }
+
+    // Show the hint when the pane has no visible content, hide it otherwise.
+    // Re-append after clearing innerHTML so it is always present in the DOM.
+    userPane.appendChild(typingHint);
+    typingHint.style.display = lastUserEl ? 'none' : '';
 
     // Keep the active word + the cursor visible when the verse wraps to
     // more lines than the box can show.
