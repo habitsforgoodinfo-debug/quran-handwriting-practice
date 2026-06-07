@@ -59,12 +59,34 @@ export class LiveMatcher {
         inserted.push(s);
         const entry = { kind: s.kind, letter: s.letter, slotIdx: this.state.slotIdx };
         if ((s.kind === 'sound' || s.kind === 'silent') && this._letterIsOptional(s.letter)) {
-          // Whole letter is auto-filled → fill in EVERY required harakat
-          // regardless of which harakat the user has opted out of.
+          // The letter itself is auto-filled (it is not in requiredLetters).
+          // Its marks still split into two groups:
+          //   - marks the user opted INTO via requiredHarakat → DEMANDED
+          //   - everything else → auto-filled onto the entry.
+          // When requiredHarakat is null ("all harakat demanded"), these auto
+          // letters aren't typed, so all their marks are auto-filled as before.
           const required = s.expectedHarakat?.required || [];
-          const harakatStr = required.map(n => HARAKAT_CHAR[n] || '').join('');
-          if (harakatStr) entry.harakat = harakatStr;
+          const auto = [];
+          const demanded = [];
+          for (const m of required) {
+            if (this.requiredHarakat && this.requiredHarakat.has(m)) demanded.push(m);
+            else auto.push(m);
+          }
+          const autoStr = auto.map(n => HARAKAT_CHAR[n] || '').join('');
+          if (autoStr) entry.harakat = autoStr;
           entry.auto = true;
+          if (demanded.length) {
+            // Push the auto letter (with non-demanded marks filled) but STOP
+            // to demand the opted-in marks. We do NOT advance slotIdx: the
+            // demanded marks attach to this entry via tryHarakat, which finds
+            // the last sound entry, and advances when pendingMarks empties.
+            this.state.typed.push(entry);
+            this.state.awaiting = 'harakat';
+            this.state.pendingMarks = new Set(demanded);
+            this.state.autoHarakat = '';
+            this.state.rejectCount = 0;
+            return;
+          }
         }
         this.state.typed.push(entry);
         this.state.slotIdx++;
